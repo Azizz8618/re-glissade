@@ -50,8 +50,8 @@ C     НАЧАЛЬНЫЕ УСЛОВИЯ: ВХОД В ГЛИССАДУ, 15 КМ �
       NEGL=0
       IF(MODE.EQ.2) CALL PRVIN
       WRITE(6,902)
-  902 FORMAT(1H1,25X,15HИГРА ГЛИССАДА-6,//,18X,
-     121H. БЭСМ-6, ФОРТРАН ИПМ,//)
+  902 FORMAT(1H1,25X,15HIGRA GLISSADA-6,//,18X,
+     121H. BESM-6, FORTRAN IPM,//)
       NPRINT=IFIX(FLOAT(NFR)/DTSHAG)
       IF(NPRINT.LT.1) NPRINT=999999
       NMAX=IFIX(TMAX/DTSHAG)
@@ -90,12 +90,12 @@ C     ЗАЩИТА ОТ РАЗВАЛА СЧЕТА
       IF(MOD(NSTEP,10).EQ.0) CALL DISPL(X)
  1100 CONTINUE
       WRITE(6,903) TMAX
-  903 FORMAT(1H1,10X,26HЛИМИТ ВРЕМЕНИ ИСЧЕРПАН: Т=,F7.0)
+  903 FORMAT(1H1,10X,27HLIMIT VREMENI ISCHERPAN: T=,F7.0)
       STOP
  2000 CALL FRAME(X,U)
       CALL JUDG(X)
       STOP
  2100 WRITE(6,904)
-  904 FORMAT(1H1,10X,18HАВАРИЯ: РАЗРУШЕНИЕ)
+  904 FORMAT(1H1,10X,19HAVARIA: RAZRUSHENIE)
       STOP
       END

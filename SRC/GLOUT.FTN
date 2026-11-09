@@ -28,22 +28,22 @@ C     ЭЙЛЕРОВЫ УГЛЫ ИЗ КВАТЕРНИОНА (ТАНГЕНСЫ П
    10 LINE(I)=NBLANK
       LINE(IPOS)=NSTAR
       WRITE(6,700) T,DTM,X(13)
-  700 FORMAT(1H0,8HГЛИССАДА,2X,2HТ=,F7.1,2H С,8H  ДАЛЬН=,F7.0,
-     16H  ВЫС=,F8.1)
+  700 FORMAT(1H0,8HGLISSADA,2X,2HT=,F7.1,2H S,7H DALN=,F7.0,
+     16H  VYS=,F8.1)
       WRITE(6,701) VA,X(2),ALFA,100.*U(4)
-  701 FORMAT(1H ,5HСКОР=,F6.1,4H М/С,6H ВЕРТ=,F7.2,4H М/С,
-     17H АТАКА=,F5.1,3H ГР,6H ТЯГА=,F4.0,4H ПРЦ)
+  701 FORMAT(1H ,5HSKOR=,F6.1,4H M/S,6H VERT=,F7.2,4H M/S,
+     17H ATAKA=,F5.1,3H GR,6H TYAG=,F4.0,4H PRC)
       WRITE(6,702) U(1)*57.2958,U(2)*57.2958,U(3)*57.2958,THETA,GAM,
      1PSI
-  702 FORMAT(1H ,3HРВ=,F6.1,3H ГР,3HЭЛ=,F6.1,3H ГР,3HРН=,F6.1,
-     13H ГР,5HТАНГ=,F6.1,3H ГР,5HКРЕН=,F6.1,3H ГР,5HКУРС=,F6.1,
-     23H ГР)
+  702 FORMAT(1H ,3HRV=,F6.1,3H GR,3HEL=,F6.1,3H GR,3HRN=,F6.1,
+     13H GR,5HTANG=,F6.1,3H GR,5HKREN=,F6.1,3H GR,5HKURS=,F6.1,
+     23H GR)
       WRITE(6,703)
-  703 FORMAT(1H ,17X,14HГЛИССАДА 3 ГР.)
+  703 FORMAT(1H ,17X,14HGLISSADA 3 GR.)
       WRITE(6,704) (LINE(I),I=1,41)
   704 FORMAT(1H ,17X,41A1)
       WRITE(6,705) X(12),EGLI
-  705 FORMAT(1H ,8HКУРС ЛУЧ,4H  Y=,F7.1,2H М,7H  ГЛИС=,F7.1,2H М,/)
+  705 FORMAT(1H ,9HKURS LUCH,4H  Y=,F7.1,2H M,7H  GLIS=,F7.1,2H M,/)
       RETURN
       END
 C     КОРОТКАЯ СТРОКА НА ДИСПЛЕЙ (КАНАЛ 12)
@@ -51,8 +51,8 @@ C     КОРОТКАЯ СТРОКА НА ДИСПЛЕЙ (КАНАЛ 12)
       DIMENSION X(13)
       COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
       WRITE(12,710) T,X(13),X(2),-X(11)
-  710 FORMAT(3HДСП,3H Т=,F7.1,4H ВЫС,F7.1,5H ВЕРТ,F7.2,
-     16H ДАЛЬН,F7.0)
+  710 FORMAT(3HDSP,3H T=,F7.1,4H VYS,F7.1,5H VERT,F7.2,
+     15H DALN,F7.0)
       RETURN
       END
 C     ОЦЕНКА ПОСАДКИ ПО ВЕРТИКАЛЬНОЙ СКОРОСТИ И ТОЧКЕ КАСАНИЯ
@@ -70,33 +70,33 @@ C     ОЦЕНКА ПОСАДКИ ПО ВЕРТИКАЛЬНОЙ СКОРОСТИ
       SKO=0.
       IF(NEGL.GT.0) SKO=SQRT(SUME/FLOAT(NEGL))
       WRITE(6,800)
-  800 FORMAT(1H1,30X,14HОЦЕНКА ПОСАДКИ,//)
+  800 FORMAT(1H1,30X,14HOCENKA POSADKI,//)
       WRITE(6,801) VY
-  801 FORMAT(1H0,21HВЕРТ. СКОРОСТЬ КАСАН.,F6.2,4H М/С)
+  801 FORMAT(1H0,20HVERT. SKOROST KASAN.,F6.2,4H M/S)
       WRITE(6,802) DTK
-  802 FORMAT(1H ,23HТОЧКА КАСАНИЯ ОТ ПОРОГА,F7.0,2H М)
+  802 FORMAT(1H ,24HTOCHKA KASANIYA OT POROGA,F7.0,2H M)
       WRITE(6,803) X(12)
-  803 FORMAT(1H ,15HСМЕЩЕНИЕ ОТ ОСИ,F7.1,2H М)
+  803 FORMAT(1H ,17HSMESHCHENIE OT OSI,F7.1,2H M)
       WRITE(6,804) SKO
-  804 FORMAT(1H ,15HСКО ОТ ГЛИССАДЫ,F7.2,2H М)
+  804 FORMAT(1H ,15HSKO OT GLISSADY,F7.2,2H M)
       GO TO (10,20,30,40),K
    10 WRITE(6,810)
-  810 FORMAT(1H0,7HОТЛИЧНО)
+  810 FORMAT(1H0,8HOTLICHNO)
       GO TO 50
    20 WRITE(6,820)
-  820 FORMAT(1H0,6HХОРОШО)
+  820 FORMAT(1H0,7HHOROSHO)
       GO TO 50
    30 WRITE(6,830)
-  830 FORMAT(1H0,17HУДОВЛЕТВОРИТЕЛЬНО)
+  830 FORMAT(1H0,16HUDOVLETVORITELNO)
       GO TO 50
    40 WRITE(6,840)
-  840 FORMAT(1H0,15HЖЕСТКАЯ ПОСАДКА)
+  840 FORMAT(1H0,17HZHESTKAYA POSADKA)
    50 CONTINUE
       WRITE(6,850) K
-  850 FORMAT(1H0,7HОЦЕНКА=,I2)
+  850 FORMAT(1H0,7HOCENKA=,I2)
       IF(X(11).LT.0.) WRITE(6,860)
-  860 FORMAT(1H0,25HАВАРИЯ: КАСАНИЕ ДО ПОРОГА)
+  860 FORMAT(1H0,25HAVARIA: KASANIE DO POROGA)
       WRITE(6,870) T
-  870 FORMAT(1H0,2HТ=,F7.1,7H СЕКУНД)
+  870 FORMAT(1H0,2HT=,F7.1,7H SEKUND)
       RETURN
       END

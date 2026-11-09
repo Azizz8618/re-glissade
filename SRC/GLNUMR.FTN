@@ -1,0 +1,43 @@
+C==============================================================
+C     ГЛИССАДА-6. РЕЗЕРВНЫЙ АДАПТЕР (БЕЗ ОБРАЩЕНИЙ К СБ).
+C     ЗАМЕНЯЕТ SRC/GLNUM.FTN В КОЛОДАХ КОНТРОЛЬНЫХ ПРОГОНОВ,
+C     ПОКА НЕ ПОДТВЕРЖДЕНА ДОСТУПНОСТЬ СБ (ATM/NR) В СРЕДЕ.
+C     ПЛОТНОСТЬ - МСА ДО 11 КМ; СЛУЧАЙНЫЕ - ЛЕМЕР + ЦПТ.
+C     ПОЛЕ БИБЛ.СБ КАРТЫ 1 ЗДЕСЬ НЕ ДЕЙСТВУЕТ.
+C==============================================================
+C-----СТАНДАРТНАЯ АТМОСФЕРА: ФОРМУЛЫ МСА
+      SUBROUTINE SBATM(HG,TK,RHO)
+      TK=288.15-0.0065*HG
+      IF(HG.GT.11000.) TK=216.65
+      RHO=1.225*(TK/288.15)**4.2559
+      IF(HG.GT.11000.) RHO=0.3639*EXP(-9.80665*(HG-11000.)/
+     1(287.05*216.65))
+      RETURN
+      END
+C-----НОРМАЛЬНАЯ СЛУЧАЙНАЯ ВЕЛИЧИНА: СУММА 12 РАВНОМЕРНЫХ
+C     (ЛЕМЕР + ЦЕНТРАЛЬНАЯ ПРЕДЕЛЬНАЯ ТЕОРЕМА)
+      FUNCTION SBRND(SIG)
+      COMMON /SBSEED/ RSEED
+      ACC=0.
+      DO 11 I=1,12
+      RSEED=AMOD(997.*RSEED+0.731644,1.0)
+   11 ACC=ACC+RSEED
+      SBRND=SIG*(ACC-6.)
+      RETURN
+      END
+C-----ТУРБУЛЕНТНОСТЬ: ФИЛЬТР ОРНШТЕЙНА-УЛЕНБЕКА, 3 КАНАЛА
+C     DW/DT = -W/TAU + SIG*SQRT(2/TAU)*КСИ
+      SUBROUTINE TURB
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
+      IF(SIGW.LE.0.) GO TO 20
+      AK1=SIGW*SQRT(2.*DTSHAG/TAU)
+      WGX=WGX+(-WGX/TAU)*DTSHAG+AK1*SBRND(1.)
+      WGY=WGY+(-WGY/TAU)*DTSHAG+AK1*SBRND(1.)
+      WGZ=WGZ+(-WGZ/TAU)*DTSHAG+AK1*SBRND(1.)
+      RETURN
+   20 WGX=0.
+      WGY=0.
+      WGZ=0.
+      RETURN
+      END
