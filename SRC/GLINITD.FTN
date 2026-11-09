@@ -1,0 +1,148 @@
+C==============================================================
+C     ГЛИССАДА-6. ДАННЫЕ САМОЛЕТОВ, ПОСАДОЧНАЯ КОНФИГУРАЦИЯ.
+C     КОЭФФИЦИЕНТЫ - ОЦЕНКИ ПО ПУБЛИКУЕМЫМ ЛЕТНЫМ ХАРАКТЕРИСТИКАМ;
+C     УТОЧНЯЮТСЯ ПО ОТЧЕТАМ ОКБ/ЦАГИ НА ЭТАПЕ 2.
+C     РАСКЛАДКА /SOST/:
+C     1 GM, 2 S, 3 BB, 4 CC, 5 CL0, 6 CLA, 7 CLMX, 8 CD0, 9 AK,
+C     10 CMA, 11 CM0, 12 CMDE, 13 CMQ, 14 CLB, 15 CLDA, 16 CLP,
+C     17 CNB, 18 CNDR, 19 CNR, 20 CYB, 21 ETYPE, 22 THMAX,
+C     23 PMAX, 24 VTHR, 25 HCR
+C==============================================================
+      SUBROUTINE INITD(KTIP)
+      COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
+     1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
+      COMMON /INERC/ JX,JY,JZ
+      GO TO (10,20,30,40),KTIP
+   10 CONTINUE
+C     МИГ-15: ТРД РД-45Ф, КРЫЛО 20.6 М2, РАЗМАХ 10.08 М, 5000 КГ
+      GM=5000.
+      S=20.6
+      BB=10.08
+      CC=2.0
+      CL0=0.15
+      CLA=4.5
+      CLMX=1.30
+      CD0=0.025
+      AK=0.081
+      CMA=-1.0
+      CM0=0.01
+      CMDE=1.10
+      CMQ=-8.0
+      CLB=-0.06
+      CLDA=0.10
+      CLP=-0.35
+      CNB=-0.09
+      CNDR=-0.08
+      CNR=-0.12
+      CYB=-1.0
+      ETYPE=1.
+      THMAX=22600.
+      PMAX=0.
+      VTHR=72.
+      HCR=1.8
+      JX=4800.
+      JY=11500.
+      JZ=15000.
+      WRITE(6,910)
+  910 FORMAT(1H0,13HТИП САМОЛЕТА:,7H МИГ-15)
+      RETURN
+   20 CONTINUE
+C     ИЛ-28: 2 ТРД ВК-1, КРЫЛО 60.8 М2, РАЗМАХ 21.45 М, 21000 КГ
+      GM=21000.
+      S=60.8
+      BB=21.45
+      CC=3.1
+      CL0=0.20
+      CLA=4.8
+      CLMX=1.95
+      CD0=0.034
+      AK=0.053
+      CMA=-0.9
+      CM0=0.02
+      CMDE=1.00
+      CMQ=-9.0
+      CLB=-0.07
+      CLDA=0.09
+      CLP=-0.40
+      CNB=-0.10
+      CNDR=-0.07
+      CNR=-0.15
+      CYB=-1.0
+      ETYPE=1.
+      THMAX=52000.
+      PMAX=0.
+      VTHR=55.
+      HCR=2.2
+      JX=28000.
+      JY=62000.
+      JZ=83000.
+      WRITE(6,920)
+  920 FORMAT(1H0,13HТИП САМОЛЕТА:,6H ИЛ-28)
+      RETURN
+   30 CONTINUE
+C     ТУ-104: 2 ТРД АМ-3, КРЫЛО 344.6 М2, РАЗМАХ 34.54 М, 62000 КГ
+      GM=62000.
+      S=344.6
+      BB=34.54
+      CC=5.4
+      CL0=0.22
+      CLA=4.2
+      CLMX=1.35
+      CD0=0.030
+      AK=0.115
+      CMA=-0.8
+      CM0=0.02
+      CMDE=0.90
+      CMQ=-10.0
+      CLB=-0.08
+      CLDA=0.08
+      CLP=-0.45
+      CNB=-0.11
+      CNDR=-0.06
+      CNR=-0.18
+      CYB=-1.0
+      ETYPE=1.
+      THMAX=168000.
+      PMAX=0.
+      VTHR=78.
+      HCR=2.5
+      JX=800000.
+      JY=2200000.
+      JZ=2800000.
+      WRITE(6,930)
+  930 FORMAT(1H0,13HТИП САМОЛЕТА:,7H ТУ-104)
+      RETURN
+   40 CONTINUE
+C     АН-24: 2 ТВД АИ-24, КРЫЛО 74.98 М2, РАЗМАХ 29.2 М, 20000 КГ
+      GM=20000.
+      S=74.98
+      BB=29.2
+      CC=2.9
+      CL0=0.30
+      CLA=4.6
+      CLMX=1.60
+      CD0=0.032
+      AK=0.046
+      CMA=-0.9
+      CM0=0.03
+      CMDE=0.90
+      CMQ=-9.0
+      CLB=-0.07
+      CLDA=0.09
+      CLP=-0.40
+      CNB=-0.10
+      CNDR=-0.07
+      CNR=-0.15
+      CYB=-1.0
+      ETYPE=2.
+      THMAX=50000.
+      PMAX=3800000.
+      VTHR=57.
+      HCR=2.0
+      JX=120000.
+      JY=300000.
+      JZ=380000.
+      WRITE(6,940)
+  940 FORMAT(1H0,13HТИП САМОЛЕТА:,6H АН-24)
+      RETURN
+      END

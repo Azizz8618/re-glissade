@@ -1,0 +1,94 @@
+C==============================================================
+C     ГЛИССАДА-6. ПРАВЫЕ ЧАСТИ УРАВНЕНИЙ ДВИЖЕНИЯ
+C     (6 СТЕПЕНЕЙ СВОБОДЫ) И ДВИГАТЕЛИ.
+C     МОМЕНТЫ: WX-КРЕН, WY-РЫСКАНИЕ, WZ-ТАНГАЖ (ОСИ КОРПУСА).
+C==============================================================
+      SUBROUTINE PROIZV(X,U,XD)
+      DIMENSION X(13),U(4),XD(13)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
+     1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
+      COMMON /INERC/ JX,JY,JZ
+      COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
+      COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
+C     МАТРИЦА КОСИНУСОВ КОРПУС->ЗЕМЛЯ
+      Q0=X(4)
+      Q1=X(5)
+      Q2=X(6)
+      Q3=X(7)
+      A11=Q0*Q0+Q1*Q1-Q2*Q2-Q3*Q3
+      A12=2.*(Q1*Q2-Q0*Q3)
+      A13=2.*(Q1*Q3+Q0*Q2)
+      A21=2.*(Q1*Q2+Q0*Q3)
+      A22=Q0*Q0-Q1*Q1+Q2*Q2-Q3*Q3
+      A23=2.*(Q2*Q3-Q0*Q1)
+      A31=2.*(Q1*Q3-Q0*Q2)
+      A32=2.*(Q2*Q3+Q0*Q1)
+      A33=Q0*Q0-Q1*Q1-Q2*Q2+Q3*Q3
+C     ВОЗДУШНАЯ СКОРОСТЬ В ОСЯХ КОРПУСА (ЗЕМЛЯ->КОРПУС)
+      V1=X(1)-WGX
+      V2=X(2)-WGY
+      V3=X(3)-WGZ
+      VB1=A11*V1+A21*V2+A31*V3
+      VB2=A12*V1+A22*V2+A32*V3
+      VB3=A13*V1+A23*V2+A33*V3
+      VA=SQRT(VB1*VB1+VB2*VB2+VB3*VB3)
+      IF(VA.LT.5.) VA=5.
+      ALFA=ATAN2(-VB2,VB1)
+      BETA=ATAN2(VB3,SQRT(VB1*VB1+VB2*VB2))
+C     АТМОСФЕРА: ПЛОТНОСТЬ ПО ВЫСОТЕ (СБ ИЛИ МСА)
+      CALL SBATM(X(13),TK,RHO)
+      QBAR=0.5*RHO*VA*VA
+C     ПОДЪЕМНАЯ СИЛА: ЛИНЕЙНЫЙ УЧАСТОК, ЗАТЕМ СРЫВ
+      CL=CL0+CLA*ALFA
+      ALFS=0.30
+      IF(ABS(ALFA).GT.ALFS) CL=SIGN(CLMX*(1.-1.5*(ABS(ALFA)-ALFS)),CL)
+      IF(ABS(CL).GT.CLMX) CL=SIGN(CLMX,CL)
+      CD=CD0+AK*CL*CL
+      CALL MOTOR(U(4),VA,THR)
+C     СИЛЫ В ОСЯХ КОРПУСА: АЭРОДИНАМИКА, ТЯГА, ВЕС
+      SA=SIN(ALFA)
+      CA=COS(ALFA)
+      FB1=QBAR*S*(-CD*CA+CL*SA)+THR
+      FB2=QBAR*S*(CD*SA+CL*CA)
+      FB3=QBAR*S*CYB*BETA
+      GMG=9.81*GM
+      FB1=FB1-GMG*A21
+      FB2=FB2-GMG*A22
+      FB3=FB3-GMG*A23
+      XD(1)=(A11*FB1+A12*FB2+A13*FB3)/GM
+      XD(2)=(A21*FB1+A22*FB2+A23*FB3)/GM
+      XD(3)=(A31*FB1+A32*FB2+A33*FB3)/GM
+C     МОМЕНТЫ ОТНОСИТЕЛЬНО ОСЕЙ КОРПУСА
+      PH=BB/(2.*VA)
+      QH=CC/(2.*VA)
+      AMX=QBAR*S*BB*(CLB*BETA+CLDA*U(2)+CLP*X(8)*PH)
+      AMY=QBAR*S*BB*(CNB*BETA+CNDR*U(3)+CNR*X(9)*PH)
+      AMZ=QBAR*S*CC*(CM0+CMA*ALFA+CMDE*U(1)+CMQ*X(10)*QH)
+      XD(8)=(AMX+(JY-JZ)*X(9)*X(10))/JX
+      XD(9)=(AMY+(JZ-JX)*X(10)*X(8))/JY
+      XD(10)=(AMZ+(JX-JY)*X(8)*X(9))/JZ
+C     КИНЕМАТИКА КВАТЕРНИОНА
+      XD(4)=-0.5*(X(8)*Q1+X(9)*Q2+X(10)*Q3)
+      XD(5)=0.5*(X(8)*Q0+X(9)*Q3-X(10)*Q2)
+      XD(6)=0.5*(X(9)*Q0+X(10)*Q1-X(8)*Q3)
+      XD(7)=0.5*(X(10)*Q0+X(8)*Q2-X(9)*Q1)
+      XD(11)=X(1)
+      XD(12)=X(3)
+      XD(13)=X(2)
+      ALFA=ALFA*57.2958
+      BETA=BETA*57.2958
+      CLV=CL
+      CDV=CD
+      RETURN
+      END
+C     ДВИГАТЕЛИ: 1-ТРД, 2-ТВД. УПРОЩЕННЫЕ ДРОССЕЛЬНЫЕ ХАР-КИ.
+      SUBROUTINE MOTOR(DTZ,VA,TH)
+      COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
+     1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
+      IF(ETYPE.EQ.2.) GO TO 10
+      TH=THMAX*(0.06+0.94*DTZ)*(1.0-0.0006*VA)
+      RETURN
+   10 TH=DTZ*AMIN1(THMAX,1.6*PMAX/AMAX1(VA,30.))
+      RETURN
+      END

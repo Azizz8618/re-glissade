@@ -1,0 +1,54 @@
+C==============================================================
+C     ГЛИССАДА-6. АДАПТЕРЫ БИБЛИОТЕКИ СБ (ТОМ 2048) И ЗАПАСНЫЕ
+C     ПРОГРАММЫ. СИГНАТУРЫ ВЫЗОВОВ СБ - ПО КАТАЛОГУ (МАЗНЫЙ,
+C     СИСТЕМА ПРОГРАММИРОВАНИЯ ДУБНА, С.128-139); ПРОВЕРКА
+C     СИГНАТУР - ЭТАП 1 НАСТРОЙКИ. ВСЕ ОБРАЩЕНИЯ К СБ - ЗДЕСЬ.
+C==============================================================
+C-----СТАНДАРТНАЯ АТМОСФЕРА: СБ (АЗ01/ATM) ЛИБО ФОРМУЛЫ МСА
+      SUBROUTINE SBATM(HG,TK,RHO)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      IF(IFLIB.EQ.0) GO TO 10
+      CALL ATM(HG,TK,RHO)
+      RETURN
+   10 CONTINUE
+C     ЗАПАСНАЯ ПРОГРАММА: МСА ДО 11 КМ, ВЫШЕ - ЭКСПОНЕНТА
+      TK=288.15-0.0065*HG
+      IF(HG.GT.11000.) TK=216.65
+      RHO=1.225*(TK/288.15)**4.2559
+      IF(HG.GT.11000.) RHO=0.3639*EXP(-9.80665*(HG-11000.)/
+     1(287.05*216.65))
+      RETURN
+      END
+C-----НОРМАЛЬНАЯ СЛУЧАЙНАЯ ВЕЛИЧИНА: СБ (АВ07/NR) ЛИБО СУММА
+C     12 РАВНОМЕРНЫХ (ЛЕМЕР + ЦЕНТРАЛЬНАЯ ПРЕДЕЛЬНАЯ ТЕОРЕМА)
+      FUNCTION SBRND(SIG)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /SBSEED/ RSEED
+      IF(IFLIB.EQ.0) GO TO 10
+      CALL NR(RN)
+      SBRND=SIG*RN
+      RETURN
+   10 CONTINUE
+      ACC=0.
+      DO 11 I=1,12
+      RSEED=AMOD(997.*RSEED+0.731644,1.0)
+   11 ACC=ACC+RSEED
+      SBRND=SIG*(ACC-6.)
+      RETURN
+      END
+C-----ТУРБУЛЕНТНОСТЬ: ФИЛЬТР ОРНШТЕЙНА-УЛЕНБЕКА, 3 КАНАЛА
+C     DW/DT = -W/TAU + SIG*SQRT(2/TAU)*КСИ
+      SUBROUTINE TURB
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
+      IF(SIGW.LE.0.) GO TO 20
+      AK1=SIGW*SQRT(2.*DTSHAG/TAU)
+      WGX=WGX+(-WGX/TAU)*DTSHAG+AK1*SBRND(1.)
+      WGY=WGY+(-WGY/TAU)*DTSHAG+AK1*SBRND(1.)
+      WGZ=WGZ+(-WGZ/TAU)*DTSHAG+AK1*SBRND(1.)
+      RETURN
+   20 WGX=0.
+      WGY=0.
+      WGZ=0.
+      RETURN
+      END

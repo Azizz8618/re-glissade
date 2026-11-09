@@ -1,0 +1,102 @@
+C==============================================================
+C     ГЛИССАДА-6. КАДР АЦПУ, ВЫВОД НА ДИСПЛЕЙ, ОЦЕНКА ПОСАДКИ.
+C     ПЕРВАЯ ПОЗИЦИЯ СТРОКИ - УПРАВЛЕНИЕ КАРАЖКОМ АЦПУ.
+C==============================================================
+      SUBROUTINE FRAME(X,U)
+      DIMENSION X(13),U(4),LINE(41)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
+      DATA NBLANK/1H /,NSTAR/1H*/
+C     ЭЙЛЕРОВЫ УГЛЫ ИЗ КВАТЕРНИОНА (ТАНГЕНСЫ ПОЛУ-УГЛОВ)
+      Q0=X(4)
+      A11=Q0*Q0+X(5)*X(5)-X(6)*X(6)-X(7)*X(7)
+      A21=2.*(X(5)*X(6)+Q0*X(7))
+      A31=2.*(X(5)*X(7)-Q0*X(6))
+      A22=Q0*Q0-X(5)*X(5)+X(6)*X(6)-X(7)*X(7)
+      A32=2.*(X(6)*X(7)+Q0*X(5))
+      ST=A21
+      IF(ABS(ST).GT.0.999) ST=SIGN(0.999,ST)
+      THETA=ATAN(ST/SQRT(1.-ST*ST))*57.2958
+      PSI=ATAN2(-A31,A11)*57.2958
+      GAM=ATAN2(A32,A22)*57.2958
+      DTM=-X(11)
+      EGLI=X(13)+0.05241*X(11)
+      IPOS=21+IFIX(EGLI/5.)
+      IF(IPOS.LT.1) IPOS=1
+      IF(IPOS.GT.41) IPOS=41
+      DO 10 I=1,41
+   10 LINE(I)=NBLANK
+      LINE(IPOS)=NSTAR
+      WRITE(6,700) T,DTM,X(13)
+  700 FORMAT(1H0,8HГЛИССАДА,2X,2HТ=,F7.1,2H С,8H  ДАЛЬН=,F7.0,
+     16H  ВЫС=,F8.1)
+      WRITE(6,701) VA,X(2),ALFA,100.*U(4)
+  701 FORMAT(1H ,5HСКОР=,F6.1,4H М/С,6H ВЕРТ=,F7.2,4H М/С,
+     17H АТАКА=,F5.1,3H ГР,6H ТЯГА=,F4.0,4H ПРЦ)
+      WRITE(6,702) U(1)*57.2958,U(2)*57.2958,U(3)*57.2958,THETA,GAM,
+     1PSI
+  702 FORMAT(1H ,3HРВ=,F6.1,3H ГР,3HЭЛ=,F6.1,3H ГР,3HРН=,F6.1,
+     13H ГР,5HТАНГ=,F6.1,3H ГР,5HКРЕН=,F6.1,3H ГР,5HКУРС=,F6.1,
+     23H ГР)
+      WRITE(6,703)
+  703 FORMAT(1H ,17X,14HГЛИССАДА 3 ГР.)
+      WRITE(6,704) (LINE(I),I=1,41)
+  704 FORMAT(1H ,17X,41A1)
+      WRITE(6,705) X(12),EGLI
+  705 FORMAT(1H ,8HКУРС ЛУЧ,4H  Y=,F7.1,2H М,7H  ГЛИС=,F7.1,2H М,/)
+      RETURN
+      END
+C     КОРОТКАЯ СТРОКА НА ДИСПЛЕЙ (КАНАЛ 12)
+      SUBROUTINE DISPL(X)
+      DIMENSION X(13)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      WRITE(12,710) T,X(13),X(2),-X(11)
+  710 FORMAT(3HДСП,3H Т=,F7.1,4H ВЫС,F7.1,5H ВЕРТ,F7.2,
+     16H ДАЛЬН,F7.0)
+      RETURN
+      END
+C     ОЦЕНКА ПОСАДКИ ПО ВЕРТИКАЛЬНОЙ СКОРОСТИ И ТОЧКЕ КАСАНИЯ
+      SUBROUTINE JUDG(X)
+      DIMENSION X(13)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /SCHET/ SUME,NEGL
+      VY=X(2)
+      DTK=X(11)
+      AVY=ABS(VY)
+      K=4
+      IF(AVY.LE.4.0) K=3
+      IF(AVY.LE.2.5) K=2
+      IF(AVY.LE.1.5) K=1
+      SKO=0.
+      IF(NEGL.GT.0) SKO=SQRT(SUME/FLOAT(NEGL))
+      WRITE(6,800)
+  800 FORMAT(1H1,30X,14HОЦЕНКА ПОСАДКИ,//)
+      WRITE(6,801) VY
+  801 FORMAT(1H0,21HВЕРТ. СКОРОСТЬ КАСАН.,F6.2,4H М/С)
+      WRITE(6,802) DTK
+  802 FORMAT(1H ,23HТОЧКА КАСАНИЯ ОТ ПОРОГА,F7.0,2H М)
+      WRITE(6,803) X(12)
+  803 FORMAT(1H ,15HСМЕЩЕНИЕ ОТ ОСИ,F7.1,2H М)
+      WRITE(6,804) SKO
+  804 FORMAT(1H ,15HСКО ОТ ГЛИССАДЫ,F7.2,2H М)
+      GO TO (10,20,30,40),K
+   10 WRITE(6,810)
+  810 FORMAT(1H0,7HОТЛИЧНО)
+      GO TO 50
+   20 WRITE(6,820)
+  820 FORMAT(1H0,6HХОРОШО)
+      GO TO 50
+   30 WRITE(6,830)
+  830 FORMAT(1H0,17HУДОВЛЕТВОРИТЕЛЬНО)
+      GO TO 50
+   40 WRITE(6,840)
+  840 FORMAT(1H0,15HЖЕСТКАЯ ПОСАДКА)
+   50 CONTINUE
+      WRITE(6,850) K
+  850 FORMAT(1H0,7HОЦЕНКА=,I2)
+      IF(X(11).LT.0.) WRITE(6,860)
+  860 FORMAT(1H0,25HАВАРИЯ: КАСАНИЕ ДО ПОРОГА)
+      WRITE(6,870) T
+  870 FORMAT(1H0,2HТ=,F7.1,7H СЕКУНД)
+      RETURN
+      END

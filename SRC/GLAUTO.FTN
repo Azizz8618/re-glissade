@@ -1,0 +1,69 @@
+C==============================================================
+C     ГЛИССАДА-6. АВТОПИЛАТ ЗАХОДА (РЕЖИМ 1) И ПРОГРАММА
+C     ПИЛОТИРОВАНИЯ С КАРТ (РЕЖИМ 2). КОЭФФИЦИЕНТЫ - ДЛЯ НАЛАДКИ.
+C==============================================================
+      SUBROUTINE GLAUTO(X,U)
+      DIMENSION X(13),U(4)
+      COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
+     1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
+      COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
+C     ВЕРТИКАЛЬНЫЙ КАНАЛ: ЗАДАННАЯ ВЕРТ. СКОРОСТЬ ПО ГЛИССАДЕ
+      EGLI=X(13)+0.05241*X(11)
+      VYC=-0.05241*X(1)-0.08*EGLI
+      IF(X(13).LT.HCR+12.) VYC=-0.7
+      DE=-0.025*(X(2)-VYC)-0.5*X(10)
+      IF(DE.GT.0.30) DE=0.30
+      IF(DE.LT.-0.30) DE=-0.30
+      U(1)=DE
+C     ТЯГА: ДЕРЖАНИЕ ПОСАДОЧНОЙ СКОРОСТИ
+      DTZ=0.35+2.0*(VTHR-X(1))/VTHR
+      IF(DTZ.GT.1.) DTZ=1.
+      IF(DTZ.LT.0.) DTZ=0.
+      U(4)=DTZ
+C     БОКОВОЙ КАНАЛ: УДЕРЖАНИЕ ОСИ ВПП, ДЕМПФЕРЫ КРЕНА И РЫСКАНИЯ
+      DA=-0.0008*X(12)-0.02*X(3)-0.25*X(8)
+      IF(DA.GT.0.15) DA=0.15
+      IF(DA.LT.-0.15) DA=-0.15
+      U(2)=DA
+      DR=-1.0*X(9)+0.03*BETA
+      IF(DR.GT.0.20) DR=0.20
+      IF(DR.LT.-0.20) DR=-0.20
+      U(3)=DR
+      RETURN
+      END
+C     ПРОГРАММА ПИЛОТИРОВАНИЯ: ЛИНЕЙНАЯ ИНТЕРПОЛЯЦИЯ ПО КАРТАМ
+      SUBROUTINE PROGC(T,U)
+      DIMENSION U(4)
+      COMMON /PROGT/ TT(100),DEA(100),DAA(100),DRA(100),DTA(100),NTAB
+      IF(NTAB.LE.0) RETURN
+      IF(NTAB.EQ.1) GO TO 50
+      IF(T.GE.TT(NTAB)) GO TO 50
+      K=1
+      DO 10 I=2,NTAB
+      IF(T.LT.TT(I)) GO TO 20
+   10 K=I
+      GO TO 50
+   20 F=(T-TT(K))/(TT(K+1)-TT(K))
+      U(1)=(DEA(K)+(DEA(K+1)-DEA(K))*F)*0.017453
+      U(2)=(DAA(K)+(DAA(K+1)-DAA(K))*F)*0.017453
+      U(3)=(DRA(K)+(DRA(K+1)-DRA(K))*F)*0.017453
+      U(4)=DTA(K)+(DTA(K+1)-DTA(K))*F
+      RETURN
+   50 U(1)=DEA(NTAB)*0.017453
+      U(2)=DAA(NTAB)*0.017453
+      U(3)=DRA(NTAB)*0.017453
+      U(4)=DTA(NTAB)
+      RETURN
+      END
+C     ВВОД ПРОГРАММЫ ПИЛОТИРОВАНИЯ С КАРТ (ДО КАРТЫ С Т<0)
+      SUBROUTINE PRVIN
+      COMMON /PROGT/ TT(100),DEA(100),DAA(100),DRA(100),DTA(100),NTAB
+      NTAB=0
+      DO 10 I=1,100
+      READ(5,950) TT(I),DEA(I),DAA(I),DRA(I),DTA(I)
+  950 FORMAT(5F8.0)
+      IF(TT(I).LT.0.) GO TO 20
+      NTAB=I
+   10 CONTINUE
+   20 RETURN
+      END

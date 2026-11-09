@@ -1,0 +1,575 @@
+*NAME GLISSADA
+*FORTRAN
+C==============================================================
+C     ИГРА ГЛИССАДА-6.  БЭСМ-6, ДИСПАК, ФОРТРАН ИПМ.
+C     ГЛАВНАЯ ПРОГРАММА: ВВОД КАРТ, ЦИКЛ ПО ВРЕМЕНИ,
+C     ИНТЕГРИРОВАНИЕ ПО РУНГЕ-КУТТУ 4-ГО ПОРЯДКА, ШАГ 0.1 С.
+C     ЗЕМНЫЕ ОСИ: XG-ВДОЛЬ ВПП, YG-ВВЕРХ, ZG-ВПРАВО.
+C     ОСИ КОРПУСА: XB-ВПЕРЕД, YB-ВВЕРХ, ZB-ВПРАВО.
+C     КВАТЕРНИОН: СКАЛЯРНАЯ ЧАСТЬ ПЕРВАЯ. СОСТОЯНИЕ X(13):
+C     VX,VY,VZ,Q0,Q1,Q2,Q3,WX,WY,WZ,XG,YG,HG
+C==============================================================
+      DIMENSION X(13),U(4),K1(13),X1(13),K2(13),X2(13),K3(13),X3(13)
+      DIMENSION K4(13)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
+     1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
+      COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
+      COMMON /SBSEED/ RSEED
+      COMMON /SCHET/ SUME,NEGL
+C     КАРТА 1: ТИП,РЕЖИМ,КОНТРОЛЬ,ПЕЧАТЬ АЦПУ,БИБЛ.СБ  (5I5)
+      READ(5,900) KTIP,MODE,ICTRL,NFR,IFLIB
+  900 FORMAT(5I5)
+C     КАРТА 2: ВРЕМЯ,СЕМЯ СЛУЧ.ЧИСЕЛ,ТУРБУЛЕНТНОСТЬ,ТЯГА (4F8.0)
+      READ(5,901) TMAX,RSEED,SIGW,DT0
+  901 FORMAT(4F8.0)
+      DTSHAG=0.1
+      TAU=1.0
+      CALL INITD(KTIP)
+C     НАЧАЛЬНЫЕ УСЛОВИЯ: ВХОД В ГЛИССАДУ, 15 КМ ОТ ПОРОГА, 3 ГР
+      X(1)=VTHR
+      X(2)=0.
+      X(3)=0.
+      X(4)=1.
+      X(5)=0.
+      X(6)=0.
+      X(7)=0.
+      X(8)=0.
+      X(9)=0.
+      X(10)=0.
+      X(11)=-15000.
+      X(12)=0.
+      X(13)=15000.*0.05241
+      T=0.
+      U(1)=0.
+      U(2)=0.
+      U(3)=0.
+      U(4)=DT0
+      WGX=0.
+      WGY=0.
+      WGZ=0.
+      SUME=0.
+      NEGL=0
+      IF(MODE.EQ.2) CALL PRVIN
+      WRITE(6,902)
+  902 FORMAT(1H1,25X,15HИГРА ГЛИССАДА-6,//,18X,
+     121H. БЭСМ-6, ФОРТРАН ИПМ,//)
+      NPRINT=IFIX(FLOAT(NFR)/DTSHAG)
+      IF(NPRINT.LT.1) NPRINT=999999
+      NMAX=IFIX(TMAX/DTSHAG)
+      DO 1100 NSTEP=1,NMAX
+      T=T+DTSHAG
+      IF(MODE.EQ.1) CALL GLAUTO(X,U)
+      IF(MODE.EQ.2) CALL PROGC(T,U)
+      CALL TURB
+      CALL PROIZV(X,U,K1)
+      DO 100 I=1,13
+  100 X1(I)=X(I)+0.5*DTSHAG*K1(I)
+      CALL PROIZV(X1,U,K2)
+      DO 110 I=1,13
+  110 X2(I)=X(I)+0.5*DTSHAG*K2(I)
+      CALL PROIZV(X2,U,K3)
+      DO 120 I=1,13
+  120 X3(I)=X(I)+DTSHAG*K3(I)
+      CALL PROIZV(X3,U,K4)
+      DO 130 I=1,13
+  130 X(I)=X(I)+DTSHAG*(K1(I)+2.*K2(I)+2.*K3(I)+K4(I))/6.
+C     НОРМИРОВКА КВАТЕРНИОНА
+      QN=SQRT(X(4)*X(4)+X(5)*X(5)+X(6)*X(6)+X(7)*X(7))
+      X(4)=X(4)/QN
+      X(5)=X(5)/QN
+      X(6)=X(6)/QN
+      X(7)=X(7)/QN
+C     НАКОПЛЕНИЕ СКО ОТКЛОНЕНИЯ ОТ ГЛИССАДЫ
+      EGLI=X(13)+0.05241*X(11)
+      SUME=SUME+EGLI*EGLI
+      NEGL=NEGL+1
+C     КАСАНИЕ ПОЛОСЫ (ВЫСОТА ШАССИ)
+      IF(X(13).LE.HCR) GO TO 2000
+C     ЗАЩИТА ОТ РАЗВАЛА СЧЕТА
+      IF(X(13).LT.-100.) GO TO 2100
+      IF(MOD(NSTEP,NPRINT).EQ.0) CALL FRAME(X,U)
+      IF(MOD(NSTEP,10).EQ.0) CALL DISPL(X)
+ 1100 CONTINUE
+      WRITE(6,903) TMAX
+  903 FORMAT(1H1,10X,26HЛИМИТ ВРЕМЕНИ ИСЧЕРПАН: Т=,F7.0)
+      STOP
+ 2000 CALL FRAME(X,U)
+      CALL JUDG(X)
+      STOP
+ 2100 WRITE(6,904)
+  904 FORMAT(1H1,10X,18HАВАРИЯ: РАЗРУШЕНИЕ)
+      STOP
+      END
+C==============================================================
+C     ГЛИССАДА-6. ПРАВЫЕ ЧАСТИ УРАВНЕНИЙ ДВИЖЕНИЯ
+C     (6 СТЕПЕНЕЙ СВОБОДЫ) И ДВИГАТЕЛИ.
+C     МОМЕНТЫ: WX-КРЕН, WY-РЫСКАНИЕ, WZ-ТАНГАЖ (ОСИ КОРПУСА).
+C==============================================================
+      SUBROUTINE PROIZV(X,U,XD)
+      DIMENSION X(13),U(4),XD(13)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
+     1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
+      COMMON /INERC/ JX,JY,JZ
+      COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
+      COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
+C     МАТРИЦА КОСИНУСОВ КОРПУС->ЗЕМЛЯ
+      Q0=X(4)
+      Q1=X(5)
+      Q2=X(6)
+      Q3=X(7)
+      A11=Q0*Q0+Q1*Q1-Q2*Q2-Q3*Q3
+      A12=2.*(Q1*Q2-Q0*Q3)
+      A13=2.*(Q1*Q3+Q0*Q2)
+      A21=2.*(Q1*Q2+Q0*Q3)
+      A22=Q0*Q0-Q1*Q1+Q2*Q2-Q3*Q3
+      A23=2.*(Q2*Q3-Q0*Q1)
+      A31=2.*(Q1*Q3-Q0*Q2)
+      A32=2.*(Q2*Q3+Q0*Q1)
+      A33=Q0*Q0-Q1*Q1-Q2*Q2+Q3*Q3
+C     ВОЗДУШНАЯ СКОРОСТЬ В ОСЯХ КОРПУСА (ЗЕМЛЯ->КОРПУС)
+      V1=X(1)-WGX
+      V2=X(2)-WGY
+      V3=X(3)-WGZ
+      VB1=A11*V1+A21*V2+A31*V3
+      VB2=A12*V1+A22*V2+A32*V3
+      VB3=A13*V1+A23*V2+A33*V3
+      VA=SQRT(VB1*VB1+VB2*VB2+VB3*VB3)
+      IF(VA.LT.5.) VA=5.
+      ALFA=ATAN2(-VB2,VB1)
+      BETA=ATAN2(VB3,SQRT(VB1*VB1+VB2*VB2))
+C     АТМОСФЕРА: ПЛОТНОСТЬ ПО ВЫСОТЕ (СБ ИЛИ МСА)
+      CALL SBATM(X(13),TK,RHO)
+      QBAR=0.5*RHO*VA*VA
+C     ПОДЪЕМНАЯ СИЛА: ЛИНЕЙНЫЙ УЧАСТОК, ЗАТЕМ СРЫВ
+      CL=CL0+CLA*ALFA
+      ALFS=0.30
+      IF(ABS(ALFA).GT.ALFS) CL=SIGN(CLMX*(1.-1.5*(ABS(ALFA)-ALFS)),CL)
+      IF(ABS(CL).GT.CLMX) CL=SIGN(CLMX,CL)
+      CD=CD0+AK*CL*CL
+      CALL MOTOR(U(4),VA,THR)
+C     СИЛЫ В ОСЯХ КОРПУСА: АЭРОДИНАМИКА, ТЯГА, ВЕС
+      SA=SIN(ALFA)
+      CA=COS(ALFA)
+      FB1=QBAR*S*(-CD*CA+CL*SA)+THR
+      FB2=QBAR*S*(CD*SA+CL*CA)
+      FB3=QBAR*S*CYB*BETA
+      GMG=9.81*GM
+      FB1=FB1-GMG*A21
+      FB2=FB2-GMG*A22
+      FB3=FB3-GMG*A23
+      XD(1)=(A11*FB1+A12*FB2+A13*FB3)/GM
+      XD(2)=(A21*FB1+A22*FB2+A23*FB3)/GM
+      XD(3)=(A31*FB1+A32*FB2+A33*FB3)/GM
+C     МОМЕНТЫ ОТНОСИТЕЛЬНО ОСЕЙ КОРПУСА
+      PH=BB/(2.*VA)
+      QH=CC/(2.*VA)
+      AMX=QBAR*S*BB*(CLB*BETA+CLDA*U(2)+CLP*X(8)*PH)
+      AMY=QBAR*S*BB*(CNB*BETA+CNDR*U(3)+CNR*X(9)*PH)
+      AMZ=QBAR*S*CC*(CM0+CMA*ALFA+CMDE*U(1)+CMQ*X(10)*QH)
+      XD(8)=(AMX+(JY-JZ)*X(9)*X(10))/JX
+      XD(9)=(AMY+(JZ-JX)*X(10)*X(8))/JY
+      XD(10)=(AMZ+(JX-JY)*X(8)*X(9))/JZ
+C     КИНЕМАТИКА КВАТЕРНИОНА
+      XD(4)=-0.5*(X(8)*Q1+X(9)*Q2+X(10)*Q3)
+      XD(5)=0.5*(X(8)*Q0+X(9)*Q3-X(10)*Q2)
+      XD(6)=0.5*(X(9)*Q0+X(10)*Q1-X(8)*Q3)
+      XD(7)=0.5*(X(10)*Q0+X(8)*Q2-X(9)*Q1)
+      XD(11)=X(1)
+      XD(12)=X(3)
+      XD(13)=X(2)
+      ALFA=ALFA*57.2958
+      BETA=BETA*57.2958
+      CLV=CL
+      CDV=CD
+      RETURN
+      END
+C     ДВИГАТЕЛИ: 1-ТРД, 2-ТВД. УПРОЩЕННЫЕ ДРОССЕЛЬНЫЕ ХАР-КИ.
+      SUBROUTINE MOTOR(DTZ,VA,TH)
+      COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
+     1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
+      IF(ETYPE.EQ.2.) GO TO 10
+      TH=THMAX*(0.06+0.94*DTZ)*(1.0-0.0006*VA)
+      RETURN
+   10 TH=DTZ*AMIN1(THMAX,1.6*PMAX/AMAX1(VA,30.))
+      RETURN
+      END
+C==============================================================
+C     ГЛИССАДА-6. ДАННЫЕ САМОЛЕТОВ, ПОСАДОЧНАЯ КОНФИГУРАЦИЯ.
+C     КОЭФФИЦИЕНТЫ - ОЦЕНКИ ПО ПУБЛИКУЕМЫМ ЛЕТНЫМ ХАРАКТЕРИСТИКАМ;
+C     УТОЧНЯЮТСЯ ПО ОТЧЕТАМ ОКБ/ЦАГИ НА ЭТАПЕ 2.
+C     РАСКЛАДКА /SOST/:
+C     1 GM, 2 S, 3 BB, 4 CC, 5 CL0, 6 CLA, 7 CLMX, 8 CD0, 9 AK,
+C     10 CMA, 11 CM0, 12 CMDE, 13 CMQ, 14 CLB, 15 CLDA, 16 CLP,
+C     17 CNB, 18 CNDR, 19 CNR, 20 CYB, 21 ETYPE, 22 THMAX,
+C     23 PMAX, 24 VTHR, 25 HCR
+C==============================================================
+      SUBROUTINE INITD(KTIP)
+      COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
+     1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
+      COMMON /INERC/ JX,JY,JZ
+      GO TO (10,20,30,40),KTIP
+   10 CONTINUE
+C     МИГ-15: ТРД РД-45Ф, КРЫЛО 20.6 М2, РАЗМАХ 10.08 М, 5000 КГ
+      GM=5000.
+      S=20.6
+      BB=10.08
+      CC=2.0
+      CL0=0.15
+      CLA=4.5
+      CLMX=1.30
+      CD0=0.025
+      AK=0.081
+      CMA=-1.0
+      CM0=0.01
+      CMDE=1.10
+      CMQ=-8.0
+      CLB=-0.06
+      CLDA=0.10
+      CLP=-0.35
+      CNB=-0.09
+      CNDR=-0.08
+      CNR=-0.12
+      CYB=-1.0
+      ETYPE=1.
+      THMAX=22600.
+      PMAX=0.
+      VTHR=72.
+      HCR=1.8
+      JX=4800.
+      JY=11500.
+      JZ=15000.
+      WRITE(6,910)
+  910 FORMAT(1H0,13HТИП САМОЛЕТА:,7H МИГ-15)
+      RETURN
+   20 CONTINUE
+C     ИЛ-28: 2 ТРД ВК-1, КРЫЛО 60.8 М2, РАЗМАХ 21.45 М, 21000 КГ
+      GM=21000.
+      S=60.8
+      BB=21.45
+      CC=3.1
+      CL0=0.20
+      CLA=4.8
+      CLMX=1.95
+      CD0=0.034
+      AK=0.053
+      CMA=-0.9
+      CM0=0.02
+      CMDE=1.00
+      CMQ=-9.0
+      CLB=-0.07
+      CLDA=0.09
+      CLP=-0.40
+      CNB=-0.10
+      CNDR=-0.07
+      CNR=-0.15
+      CYB=-1.0
+      ETYPE=1.
+      THMAX=52000.
+      PMAX=0.
+      VTHR=55.
+      HCR=2.2
+      JX=28000.
+      JY=62000.
+      JZ=83000.
+      WRITE(6,920)
+  920 FORMAT(1H0,13HТИП САМОЛЕТА:,6H ИЛ-28)
+      RETURN
+   30 CONTINUE
+C     ТУ-104: 2 ТРД АМ-3, КРЫЛО 344.6 М2, РАЗМАХ 34.54 М, 62000 КГ
+      GM=62000.
+      S=344.6
+      BB=34.54
+      CC=5.4
+      CL0=0.22
+      CLA=4.2
+      CLMX=1.35
+      CD0=0.030
+      AK=0.115
+      CMA=-0.8
+      CM0=0.02
+      CMDE=0.90
+      CMQ=-10.0
+      CLB=-0.08
+      CLDA=0.08
+      CLP=-0.45
+      CNB=-0.11
+      CNDR=-0.06
+      CNR=-0.18
+      CYB=-1.0
+      ETYPE=1.
+      THMAX=168000.
+      PMAX=0.
+      VTHR=78.
+      HCR=2.5
+      JX=800000.
+      JY=2200000.
+      JZ=2800000.
+      WRITE(6,930)
+  930 FORMAT(1H0,13HТИП САМОЛЕТА:,7H ТУ-104)
+      RETURN
+   40 CONTINUE
+C     АН-24: 2 ТВД АИ-24, КРЫЛО 74.98 М2, РАЗМАХ 29.2 М, 20000 КГ
+      GM=20000.
+      S=74.98
+      BB=29.2
+      CC=2.9
+      CL0=0.30
+      CLA=4.6
+      CLMX=1.60
+      CD0=0.032
+      AK=0.046
+      CMA=-0.9
+      CM0=0.03
+      CMDE=0.90
+      CMQ=-9.0
+      CLB=-0.07
+      CLDA=0.09
+      CLP=-0.40
+      CNB=-0.10
+      CNDR=-0.07
+      CNR=-0.15
+      CYB=-1.0
+      ETYPE=2.
+      THMAX=50000.
+      PMAX=3800000.
+      VTHR=57.
+      HCR=2.0
+      JX=120000.
+      JY=300000.
+      JZ=380000.
+      WRITE(6,940)
+  940 FORMAT(1H0,13HТИП САМОЛЕТА:,6H АН-24)
+      RETURN
+      END
+C==============================================================
+C     ГЛИССАДА-6. АДАПТЕРЫ БИБЛИОТЕКИ СБ (ТОМ 2048) И ЗАПАСНЫЕ
+C     ПРОГРАММЫ. СИГНАТУРЫ ВЫЗОВОВ СБ - ПО КАТАЛОГУ (МАЗНЫЙ,
+C     СИСТЕМА ПРОГРАММИРОВАНИЯ ДУБНА, С.128-139); ПРОВЕРКА
+C     СИГНАТУР - ЭТАП 1 НАСТРОЙКИ. ВСЕ ОБРАЩЕНИЯ К СБ - ЗДЕСЬ.
+C==============================================================
+C-----СТАНДАРТНАЯ АТМОСФЕРА: СБ (АЗ01/ATM) ЛИБО ФОРМУЛЫ МСА
+      SUBROUTINE SBATM(HG,TK,RHO)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      IF(IFLIB.EQ.0) GO TO 10
+      CALL ATM(HG,TK,RHO)
+      RETURN
+   10 CONTINUE
+C     ЗАПАСНАЯ ПРОГРАММА: МСА ДО 11 КМ, ВЫШЕ - ЭКСПОНЕНТА
+      TK=288.15-0.0065*HG
+      IF(HG.GT.11000.) TK=216.65
+      RHO=1.225*(TK/288.15)**4.2559
+      IF(HG.GT.11000.) RHO=0.3639*EXP(-9.80665*(HG-11000.)/
+     1(287.05*216.65))
+      RETURN
+      END
+C-----НОРМАЛЬНАЯ СЛУЧАЙНАЯ ВЕЛИЧИНА: СБ (АВ07/NR) ЛИБО СУММА
+C     12 РАВНОМЕРНЫХ (ЛЕМЕР + ЦЕНТРАЛЬНАЯ ПРЕДЕЛЬНАЯ ТЕОРЕМА)
+      FUNCTION SBRND(SIG)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /SBSEED/ RSEED
+      IF(IFLIB.EQ.0) GO TO 10
+      CALL NR(RN)
+      SBRND=SIG*RN
+      RETURN
+   10 CONTINUE
+      ACC=0.
+      DO 11 I=1,12
+      RSEED=AMOD(997.*RSEED+0.731644,1.0)
+   11 ACC=ACC+RSEED
+      SBRND=SIG*(ACC-6.)
+      RETURN
+      END
+C-----ТУРБУЛЕНТНОСТЬ: ФИЛЬТР ОРНШТЕЙНА-УЛЕНБЕКА, 3 КАНАЛА
+C     DW/DT = -W/TAU + SIG*SQRT(2/TAU)*КСИ
+      SUBROUTINE TURB
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
+      IF(SIGW.LE.0.) GO TO 20
+      AK1=SIGW*SQRT(2.*DTSHAG/TAU)
+      WGX=WGX+(-WGX/TAU)*DTSHAG+AK1*SBRND(1.)
+      WGY=WGY+(-WGY/TAU)*DTSHAG+AK1*SBRND(1.)
+      WGZ=WGZ+(-WGZ/TAU)*DTSHAG+AK1*SBRND(1.)
+      RETURN
+   20 WGX=0.
+      WGY=0.
+      WGZ=0.
+      RETURN
+      END
+C==============================================================
+C     ГЛИССАДА-6. АВТОПИЛАТ ЗАХОДА (РЕЖИМ 1) И ПРОГРАММА
+C     ПИЛОТИРОВАНИЯ С КАРТ (РЕЖИМ 2). КОЭФФИЦИЕНТЫ - ДЛЯ НАЛАДКИ.
+C==============================================================
+      SUBROUTINE GLAUTO(X,U)
+      DIMENSION X(13),U(4)
+      COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
+     1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
+      COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
+C     ВЕРТИКАЛЬНЫЙ КАНАЛ: ЗАДАННАЯ ВЕРТ. СКОРОСТЬ ПО ГЛИССАДЕ
+      EGLI=X(13)+0.05241*X(11)
+      VYC=-0.05241*X(1)-0.08*EGLI
+      IF(X(13).LT.HCR+12.) VYC=-0.7
+      DE=-0.025*(X(2)-VYC)-0.5*X(10)
+      IF(DE.GT.0.30) DE=0.30
+      IF(DE.LT.-0.30) DE=-0.30
+      U(1)=DE
+C     ТЯГА: ДЕРЖАНИЕ ПОСАДОЧНОЙ СКОРОСТИ
+      DTZ=0.35+2.0*(VTHR-X(1))/VTHR
+      IF(DTZ.GT.1.) DTZ=1.
+      IF(DTZ.LT.0.) DTZ=0.
+      U(4)=DTZ
+C     БОКОВОЙ КАНАЛ: УДЕРЖАНИЕ ОСИ ВПП, ДЕМПФЕРЫ КРЕНА И РЫСКАНИЯ
+      DA=-0.0008*X(12)-0.02*X(3)-0.25*X(8)
+      IF(DA.GT.0.15) DA=0.15
+      IF(DA.LT.-0.15) DA=-0.15
+      U(2)=DA
+      DR=-1.0*X(9)+0.03*BETA
+      IF(DR.GT.0.20) DR=0.20
+      IF(DR.LT.-0.20) DR=-0.20
+      U(3)=DR
+      RETURN
+      END
+C     ПРОГРАММА ПИЛОТИРОВАНИЯ: ЛИНЕЙНАЯ ИНТЕРПОЛЯЦИЯ ПО КАРТАМ
+      SUBROUTINE PROGC(T,U)
+      DIMENSION U(4)
+      COMMON /PROGT/ TT(100),DEA(100),DAA(100),DRA(100),DTA(100),NTAB
+      IF(NTAB.LE.0) RETURN
+      IF(NTAB.EQ.1) GO TO 50
+      IF(T.GE.TT(NTAB)) GO TO 50
+      K=1
+      DO 10 I=2,NTAB
+      IF(T.LT.TT(I)) GO TO 20
+   10 K=I
+      GO TO 50
+   20 F=(T-TT(K))/(TT(K+1)-TT(K))
+      U(1)=(DEA(K)+(DEA(K+1)-DEA(K))*F)*0.017453
+      U(2)=(DAA(K)+(DAA(K+1)-DAA(K))*F)*0.017453
+      U(3)=(DRA(K)+(DRA(K+1)-DRA(K))*F)*0.017453
+      U(4)=DTA(K)+(DTA(K+1)-DTA(K))*F
+      RETURN
+   50 U(1)=DEA(NTAB)*0.017453
+      U(2)=DAA(NTAB)*0.017453
+      U(3)=DRA(NTAB)*0.017453
+      U(4)=DTA(NTAB)
+      RETURN
+      END
+C     ВВОД ПРОГРАММЫ ПИЛОТИРОВАНИЯ С КАРТ (ДО КАРТЫ С Т<0)
+      SUBROUTINE PRVIN
+      COMMON /PROGT/ TT(100),DEA(100),DAA(100),DRA(100),DTA(100),NTAB
+      NTAB=0
+      DO 10 I=1,100
+      READ(5,950) TT(I),DEA(I),DAA(I),DRA(I),DTA(I)
+  950 FORMAT(5F8.0)
+      IF(TT(I).LT.0.) GO TO 20
+      NTAB=I
+   10 CONTINUE
+   20 RETURN
+      END
+C==============================================================
+C     ГЛИССАДА-6. КАДР АЦПУ, ВЫВОД НА ДИСПЛЕЙ, ОЦЕНКА ПОСАДКИ.
+C     ПЕРВАЯ ПОЗИЦИЯ СТРОКИ - УПРАВЛЕНИЕ КАРАЖКОМ АЦПУ.
+C==============================================================
+      SUBROUTINE FRAME(X,U)
+      DIMENSION X(13),U(4),LINE(41)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
+      DATA NBLANK/1H /,NSTAR/1H*/
+C     ЭЙЛЕРОВЫ УГЛЫ ИЗ КВАТЕРНИОНА (ТАНГЕНСЫ ПОЛУ-УГЛОВ)
+      Q0=X(4)
+      A11=Q0*Q0+X(5)*X(5)-X(6)*X(6)-X(7)*X(7)
+      A21=2.*(X(5)*X(6)+Q0*X(7))
+      A31=2.*(X(5)*X(7)-Q0*X(6))
+      A22=Q0*Q0-X(5)*X(5)+X(6)*X(6)-X(7)*X(7)
+      A32=2.*(X(6)*X(7)+Q0*X(5))
+      ST=A21
+      IF(ABS(ST).GT.0.999) ST=SIGN(0.999,ST)
+      THETA=ATAN(ST/SQRT(1.-ST*ST))*57.2958
+      PSI=ATAN2(-A31,A11)*57.2958
+      GAM=ATAN2(A32,A22)*57.2958
+      DTM=-X(11)
+      EGLI=X(13)+0.05241*X(11)
+      IPOS=21+IFIX(EGLI/5.)
+      IF(IPOS.LT.1) IPOS=1
+      IF(IPOS.GT.41) IPOS=41
+      DO 10 I=1,41
+   10 LINE(I)=NBLANK
+      LINE(IPOS)=NSTAR
+      WRITE(6,700) T,DTM,X(13)
+  700 FORMAT(1H0,8HГЛИССАДА,2X,2HТ=,F7.1,2H С,8H  ДАЛЬН=,F7.0,
+     16H  ВЫС=,F8.1)
+      WRITE(6,701) VA,X(2),ALFA,100.*U(4)
+  701 FORMAT(1H ,5HСКОР=,F6.1,4H М/С,6H ВЕРТ=,F7.2,4H М/С,
+     17H АТАКА=,F5.1,3H ГР,6H ТЯГА=,F4.0,4H ПРЦ)
+      WRITE(6,702) U(1)*57.2958,U(2)*57.2958,U(3)*57.2958,THETA,GAM,
+     1PSI
+  702 FORMAT(1H ,3HРВ=,F6.1,3H ГР,3HЭЛ=,F6.1,3H ГР,3HРН=,F6.1,
+     13H ГР,5HТАНГ=,F6.1,3H ГР,5HКРЕН=,F6.1,3H ГР,5HКУРС=,F6.1,
+     23H ГР)
+      WRITE(6,703)
+  703 FORMAT(1H ,17X,14HГЛИССАДА 3 ГР.)
+      WRITE(6,704) (LINE(I),I=1,41)
+  704 FORMAT(1H ,17X,41A1)
+      WRITE(6,705) X(12),EGLI
+  705 FORMAT(1H ,8HКУРС ЛУЧ,4H  Y=,F7.1,2H М,7H  ГЛИС=,F7.1,2H М,/)
+      RETURN
+      END
+C     КОРОТКАЯ СТРОКА НА ДИСПЛЕЙ (КАНАЛ 12)
+      SUBROUTINE DISPL(X)
+      DIMENSION X(13)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      WRITE(12,710) T,X(13),X(2),-X(11)
+  710 FORMAT(3HДСП,3H Т=,F7.1,4H ВЫС,F7.1,5H ВЕРТ,F7.2,
+     16H ДАЛЬН,F7.0)
+      RETURN
+      END
+C     ОЦЕНКА ПОСАДКИ ПО ВЕРТИКАЛЬНОЙ СКОРОСТИ И ТОЧКЕ КАСАНИЯ
+      SUBROUTINE JUDG(X)
+      DIMENSION X(13)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /SCHET/ SUME,NEGL
+      VY=X(2)
+      DTK=X(11)
+      AVY=ABS(VY)
+      K=4
+      IF(AVY.LE.4.0) K=3
+      IF(AVY.LE.2.5) K=2
+      IF(AVY.LE.1.5) K=1
+      SKO=0.
+      IF(NEGL.GT.0) SKO=SQRT(SUME/FLOAT(NEGL))
+      WRITE(6,800)
+  800 FORMAT(1H1,30X,14HОЦЕНКА ПОСАДКИ,//)
+      WRITE(6,801) VY
+  801 FORMAT(1H0,21HВЕРТ. СКОРОСТЬ КАСАН.,F6.2,4H М/С)
+      WRITE(6,802) DTK
+  802 FORMAT(1H ,23HТОЧКА КАСАНИЯ ОТ ПОРОГА,F7.0,2H М)
+      WRITE(6,803) X(12)
+  803 FORMAT(1H ,15HСМЕЩЕНИЕ ОТ ОСИ,F7.1,2H М)
+      WRITE(6,804) SKO
+  804 FORMAT(1H ,15HСКО ОТ ГЛИССАДЫ,F7.2,2H М)
+      GO TO (10,20,30,40),K
+   10 WRITE(6,810)
+  810 FORMAT(1H0,7HОТЛИЧНО)
+      GO TO 50
+   20 WRITE(6,820)
+  820 FORMAT(1H0,6HХОРОШО)
+      GO TO 50
+   30 WRITE(6,830)
+  830 FORMAT(1H0,17HУДОВЛЕТВОРИТЕЛЬНО)
+      GO TO 50
+   40 WRITE(6,840)
+  840 FORMAT(1H0,15HЖЕСТКАЯ ПОСАДКА)
+   50 CONTINUE
+      WRITE(6,850) K
+  850 FORMAT(1H0,7HОЦЕНКА=,I2)
+      IF(X(11).LT.0.) WRITE(6,860)
+  860 FORMAT(1H0,25HАВАРИЯ: КАСАНИЕ ДО ПОРОГА)
+      WRITE(6,870) T
+  870 FORMAT(1H0,2HТ=,F7.1,7H СЕКУНД)
+      RETURN
+      END
+*EXECUTE
+*DATA
+    3    1    0    5    1
+   2400.   7351.     1.5     .60
+*EOJ
