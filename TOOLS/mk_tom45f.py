@@ -108,6 +108,10 @@ def main():
             zone[pos] = sep            # маркер после каждой карты
             conv[pos] = CONV_DATA
             pos += 1
+    if variant == 'f6' and pos < 1024:
+        zone[pos] = 0o7760000000000012 # слово конца записи (iocont%)
+        conv[pos] = CONV_DATA
+        pos += 1
     if pos < 1024 and sep is None:
         zone[pos] = MARK_END           # конец потока
         conv[pos] = CONV_DATA
