@@ -96,10 +96,13 @@ def main():
     pos = BODY_POS                    # тело после заголовка
     # тело: карты
     sep = MARK_END if variant == 'f5' else None
+    KEY_REC = 0o200000000200001    # ключ записи (IOCONT* [20661])
     for c in cards:
         rec = enc_card(c)
         if pos + len(rec) + 2 > 1024:
             break
+        if variant == 'f7':
+            zone[pos] = KEY_REC; conv[pos] = CONV_DATA; pos += 1
         for w in rec:
             zone[pos] = w
             conv[pos] = CONV_DATA
