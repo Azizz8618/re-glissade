@@ -58,18 +58,19 @@ def read_data_cards(deck_path):
 REC_KEY = 0o2444250310020040        # ISO "REC   " - ключ записи (4001/з0o504 сл.0o1554)
 
 def enc_rec(text):
-    """Запись e6: 25 слов = 150 байт ЧИСТОГО ТЕКСТА
-    (карта + EOR + добивка 0o40), без ключа."""
+    """Запись e7: 24 слова = 144 байта ЧИСТОГО ТЕКСТА
+    (карта 80 симв + EOR + добивка 0o40), без ключа;
+    маркер [11201] между записями ставит вызывающий код."""
     chars = [ISO.get(c, SP) for c in text.upper()][:80]
-    chars += [SP] * (149 - len(chars))
     chars.append(EOR)
+    chars += [SP] * (144 - len(chars))
     words = []
-    for w in range(0, 150, 6):
+    for w in range(0, 144, 6):
         v = 0
         for c in chars[w:w + 6]:
             v = (v << 8) | (c & 0xFF)
         words.append(v)
-    return words                         # 25 слов
+    return words                         # 24 слова
 
 
 def main():
@@ -96,6 +97,9 @@ def main():
             break
         zone[pos:pos + len(rec)] = rec
         pos += len(rec)
+        if variant == 'e1' and pos + 1 < 1024:
+            zone[pos] = MARK_CONT        # e7: маркер после каждой карты
+            pos += 1
     if pos < 1024:
         zone[pos] = MARK_END             # конец потока
         pos += 1
