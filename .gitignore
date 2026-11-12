@@ -8,3 +8,7 @@ RUNS/run-*/2048
 RUNS/run-*/2053
 RUNS/run-*/2099
 RUNS/run-*/2248
+
+# дампы барабанов Шага 0
+RUNS/run-*/drum.dump*
+RUNS/run-*/202.off
