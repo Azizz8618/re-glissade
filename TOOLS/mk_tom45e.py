@@ -85,23 +85,32 @@ def main():
         conv[pos] = CONV_DATA if variant == 'e8' else CONV_DATA
         pos += 1
     for c in cards:
-        rec = enc_rec(c)
-        if pos + len(rec) > 1024:
+        # e10: [ключ @после маркера][карта 14 слов][pad до stride 25]
+        if pos + 25 > 1024:
             break
-        for w, cv in rec:
-            zone[pos] = w
-            conv[pos] = cv
+        chars = [ISO.get(ch, SP) for ch in c.upper()][:80]
+        chars.append(EOR)
+        chars += [SP] * (84 - len(chars))
+        zone[pos] = REC_KEY
+        conv[pos] = CONV_DATA
+        pos += 1
+        for w in range(0, 84, 6):
+            v = 0
+            for ch in chars[w:w + 6]:
+                v = (v << 8) | (ch & 0xFF)
+            zone[pos] = v
+            conv[pos] = CONV_DATA
+            pos += 1
+        while pos % 25:                  # выравнивание на stride 25
+            zone[pos] = 0
+            conv[pos] = CONV_DATA
             pos += 1
     if pos < 1024:
         zone[pos] = MARK_END             # конец потока
-        conv[pos] = CONV_DATA if variant == 'e8' else CONV_DATA
+        conv[pos] = CONV_DATA
         pos += 1
-    while pos + 25 <= 1024:              # хвост: пустые записи
-        for w, cv in enc_rec(''):
-            zone[pos] = w
-            conv[pos] = cv
-            pos += 1
-
+    while pos + 25 <= 1024:              # хвост: пустые блоки
+        pos += 25
     ZT = 64 + 1024 * 8
     with open(tom, 'wb') as f:
         for z in range(ZONE_OFFSET + nzones):
