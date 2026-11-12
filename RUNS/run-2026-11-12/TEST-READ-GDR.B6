@@ -1,0 +1,32 @@
+шифр 419999 зс5^
+лен 41(2048)^
+лен 45(202-зп)^
+eeв1а3
+*name Tstgdr
+*call yesmemory
+*no list
+*system
+*full list
+*ftn
+      program main
+c---- Минимальный тест ввода данных на ФОРТРАНЕ-ГДР (блок А2)
+      integer ia(5)
+      real b(4)
+      read (5,100) ia
+ 100  format (5i5)
+      read (5,101) b
+ 101  format (4f8.0)
+      print 102, ia
+ 102  format (1x, 5i6)
+      print 103, b
+ 103  format (1x, 4f9.2)
+      print 104
+ 104  format (1x, 7hread ok)
+      stop
+      end
+*execute
+    3    1    0    5    1
+   2400.   7351.     1.5     .60
+*end file
+``````
+еконец
