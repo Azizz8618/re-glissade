@@ -12,3 +12,7 @@ RUNS/run-*/2248
 # дампы барабанов Шага 0
 RUNS/run-*/drum.dump*
 RUNS/run-*/202.off
+
+RUNS/run-*/TEST-READ-e*.log
+RUNS/run-*/TEST-READ-e*.err
+RUNS/run-*/202.bak-w14
