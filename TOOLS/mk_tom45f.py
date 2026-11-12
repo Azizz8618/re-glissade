@@ -26,6 +26,8 @@ HEADER = [0o0000000000022015,
           0o3000000000000000, 0o3400000000000000, 0o4000000000000000,
           0o4000000000000000]
 HDR_MARK_POS = 0o12              # сл.0o12 = маркер в заголовке
+BODY_POS = int(sys.argv[5]) if len(sys.argv) > 5 else 0o15  # смещение тела
+ZERO_LAST_WEIGHT = len(sys.argv) > 6
 
 ISO = {' ': 0o40, '!': 0o41, '"': 0o42, '#': 0o23, '$': 0o44, '%': 0o45,
        '&': 0o46, "'": 0o47, '(': 0o50, ')': 0o51, '*': 0o52, '+': 0o53,
@@ -89,17 +91,24 @@ def main():
         zone[i] = w
         conv[i] = CONV_CMD
     zone[HDR_MARK_POS] = MARK_END if variant == 'f1' else MARK_CONT
-    pos = len(HEADER)                  # 0o15
+    if ZERO_LAST_WEIGHT:
+        zone[0o14] = 0
+    pos = BODY_POS                    # тело после заголовка
     # тело: карты
+    sep = MARK_END if variant == 'f5' else None
     for c in cards:
         rec = enc_card(c)
-        if pos + len(rec) + 1 > 1024:
+        if pos + len(rec) + 2 > 1024:
             break
         for w in rec:
             zone[pos] = w
             conv[pos] = CONV_DATA
             pos += 1
-    if pos < 1024:
+        if sep is not None and pos < 1024:
+            zone[pos] = sep            # маркер после каждой карты
+            conv[pos] = CONV_DATA
+            pos += 1
+    if pos < 1024 and sep is None:
         zone[pos] = MARK_END           # конец потока
         conv[pos] = CONV_DATA
         pos += 1
