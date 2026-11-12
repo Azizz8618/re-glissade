@@ -16,3 +16,9 @@ RUNS/run-*/202.off
 RUNS/run-*/TEST-READ-e*.log
 RUNS/run-*/TEST-READ-e*.err
 RUNS/run-*/202.bak-w14
+
+# сырые большие трассы - хранятся сжатыми (.gz)
+RUNS/run-*/TEST-READ-mtr.err
+RUNS/run-*/TEST-READ-mtr2.err
+RUNS/run-*/TEST-READ-mtr3.err
+RUNS/run-*/TEST-READ-core*.err
