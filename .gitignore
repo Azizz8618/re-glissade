@@ -31,3 +31,9 @@ RUNS/run-*/2048
 RUNS/run-*/2053
 RUNS/run-*/2099
 RUNS/run-*/2248
+
+# сырые большие трассы s6h сессии 13.11 (как mtr/mtr2/mtr3 - в git не хранятся)
+RUNS/run-*/TEST-READ-s6h-mtr.err
+RUNS/run-*/TEST-READ-s6h-mtr4.err
+RUNS/run-*/TEST-READ-s6h-mtr8.err
+RUNS/run-*/TEST-READ-s6h-mtr9.err
