@@ -54,3 +54,15 @@ run/*/
 !run/*.txt
 !run/*.out
 !run/*.log
+
+# сессия 13.11-9/10 (k12): вложенные каталоги прогонов - образы и дампы не хранятся
+RUNS/run-*/k12-*/2048
+RUNS/run-*/k12-*/2053
+RUNS/run-*/k12-*/2099
+RUNS/run-*/k12-*/2248
+RUNS/run-*/k12-core522/core-pc.bin
+RUNS/run-*/k12-core522/core-uic.bin
+RUNS/run-*/k12-mtr/2048
+RUNS/run-*/k12-mtr/2053
+RUNS/run-*/k12-mtr/2099
+RUNS/run-*/k12-mtr/2248
