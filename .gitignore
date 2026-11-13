@@ -66,3 +66,12 @@ RUNS/run-*/k12-mtr/2048
 RUNS/run-*/k12-mtr/2053
 RUNS/run-*/k12-mtr/2099
 RUNS/run-*/k12-mtr/2248
+
+# сессия 13.11-10 (k46): вложенные каталоги k46-* - образы и дампы не хранятся
+RUNS/run-*/k46-*/2048
+RUNS/run-*/k46-*/2053
+RUNS/run-*/k46-*/2099
+RUNS/run-*/k46-*/2248
+RUNS/run-*/k46-*/core-pc.bin
+RUNS/run-*/k46-*/core-uic.bin
+RUNS/run-*/k46-run/mtr.txt
