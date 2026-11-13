@@ -200,6 +200,35 @@ def build_zone(deck_path, variant, cont=True):
         for w in body:
             zone[pos] = w; conv[pos] = CONV_DATA; pos += 1
 
+    if variant in ('k1', 'k2', 'k3'):
+        # А2 13.11-7 п.18.2: тело с EOR на границе 25 слов (0o44 от 0o14).
+        #   k1: карта 1 = 12 слов + EOR, карта 2 = 11 слов + EOR@0o44;
+        #   k2: карта 1 = 12 слов + EOR, карта 2 = 10 слов + EOR@0o43;
+        #   k3: записи по 25 слов: [24 слова текста + EOR] на 0o14/0o45/...
+        #       (EOR ровно на каждой 25-й границе тела).
+        #   k4: как k1, но тело = RLE-слова сырого спула (упаковки 0o200+N),
+        #       EOR-слово эталона после каждой карты, verbatim из колоды.
+        lens = {'k1': (12, 11, 10), 'k2': (12, 10, 10), 'k3': (24, 24, 24)}
+        n1, n2, ne = lens[variant]
+        counts = [n1, n2] + [n2] * max(0, len(data_cards) - 2)
+        seq = []
+        for i, c in enumerate(data_cards):
+            seq.append((c, counts[i] if i < len(counts) else n2))
+        seq.append(('*end file', ne))
+        for text, nw in seq:
+            if variant == 'k3':
+                nw = 24                     # 24 слова + EOR = 25 слов
+            chars = [ISO.get(ch, SP) for ch in text.upper()]
+            words = pack(chars, 8, ISO[' '])
+            while len(words) < nw:
+                words.append(0o404040404040)
+            words = words[:nw]
+            for w in words:
+                zone[pos] = w; conv[pos] = CONV_DATA; pos += 1
+            zone[pos] = WORD_EOR; conv[pos] = CONV_DATA; pos += 1
+        zone[pos] = MARK_END; conv[pos] = CONV_DATA; pos += 1
+        return zone, conv, pos
+
     for c in data_cards:
         put_record(c)
     put_record('*end file')
