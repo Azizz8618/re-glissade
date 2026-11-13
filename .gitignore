@@ -37,3 +37,20 @@ RUNS/run-*/TEST-READ-s6h-mtr.err
 RUNS/run-*/TEST-READ-s6h-mtr4.err
 RUNS/run-*/TEST-READ-s6h-mtr8.err
 RUNS/run-*/TEST-READ-s6h-mtr9.err
+
+# сессия 13.11-8 (реверс ветки 0o44): рабочие артефакты реверса перегенерируются
+# инструментами TOOLS (run_k1_core.py, run_k_mtr.py); в git - только малые логи
+run/mtr-k1/k1-mtr.txt
+run/mtr-k1/core/
+run/mtr-k1/k7rebuild/
+run/k8-mtr/
+run/k8-mtr2/mtr.txt
+run/k8-core/
+run/k8-core2/
+run/k8core-k8/core-
+run/k8-clean2/2*
+run/*/
+!run/*.dis
+!run/*.txt
+!run/*.out
+!run/*.log
