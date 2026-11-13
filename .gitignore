@@ -22,3 +22,12 @@ RUNS/run-*/TEST-READ-mtr.err
 RUNS/run-*/TEST-READ-mtr2.err
 RUNS/run-*/TEST-READ-mtr3.err
 RUNS/run-*/TEST-READ-core*.err
+
+# сессия 13.11 (продолжение): seed-файлы и дампы перегенерируются
+RUNS/run-*/seed-*.bin
+RUNS/run-*/core-pc.bin
+RUNS/run-*/core-uic.bin
+RUNS/run-*/2048
+RUNS/run-*/2053
+RUNS/run-*/2099
+RUNS/run-*/2248
