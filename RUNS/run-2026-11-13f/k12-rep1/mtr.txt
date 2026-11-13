@@ -1,0 +1,3 @@
+EXECUTE [0417] := 00414
+DRUM_SEED: 2 tracts applied (drum 20 tract 04+)
+ ОШ.В ИНФ.СЛ.ЭКСТ

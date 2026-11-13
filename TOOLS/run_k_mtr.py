@@ -32,8 +32,8 @@ env.update({
 })
 if mtr_n != '0':
     env.update({
-        'BESM6_MTR_LO': '03500',
-        'BESM6_MTR_HI': '03700',
+        'BESM6_MTR_LO': os.environ.get('MTR_LO','03500'),
+        'BESM6_MTR_HI': os.environ.get('MTR_HI','03700'),
         'BESM6_MTR_N': mtr_n,
         'BESM6_MTR_SKIP': '0',
         'BESM6_DD_DEBUG': '1',
