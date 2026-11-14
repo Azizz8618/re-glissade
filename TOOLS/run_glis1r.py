@@ -40,6 +40,11 @@ env.update({
     'BESM6_EXIT_ADDR': exitaddr,
     'PATH': '/usr/bin:/bin',
 })
+# А2 13.11-18 п.18.18(1): натуральный путь - конверт-вид родной зоны
+# из УИР (GLIS1R_NATIVE=1): redirect без форсирования тракта, сид НЕ
+# подсаживать, данные берутся 1:1 из нативной зоны 20/04.
+if os.environ.get('GLIS1R_NATIVE'):
+    env['BESM6_LUN45_NATIVE'] = '1'
 if SEED and SEED != 'none':
     env['BESM6_DRUM_SEED'] = SEED
     env['BESM6_DRUM_SEED_DRUM'] = '020'

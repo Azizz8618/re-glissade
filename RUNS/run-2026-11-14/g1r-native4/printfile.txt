@@ -1,0 +1,169 @@
+   0|                                                                
+   1| SMESHCHENIE OT OS                                                               3
+   2|
+   3|
+   4|                                                                
+   5| SKO OT GLISSADY 331.65 M
+   6|
+   7|                                                                
+   8|0ZHESTKAYA POSADKA
+   9|
+  10|                                                                
+  11|0OCENKA= 4
+  12|
+  13|ORTRAN IPM
+  14|
+  15|                                                                
+  16|0AVARIA: KASANIE DO POROGA
+  17|
+  18|                                                                
+  19|0T=   16.7 SEKUND
+  20|
+  21|`
+  22|0GLISSADA  T=    5.0 S DALN=,  14606  VYS=   702.3
+  23|
+  24|                                                                
+  25| SKOR=  93.9 M/S VERT= -32.84 M/S ATAKA=  3.3 GR TYAG=  60 PRC
+  26|
+  27|                                                                
+  28| RV=   0.0 GREL=   0.0 GRRN=   0.0 GRTANG= -19.1 GRKREN=   1.0 GRKURS=  -1.3 GR
+  29|
+  30|                                                                
+  31|                  GLISSADA 3 GR.
+  32|
+  33|                                                                
+  34|                          *                                
+  35|
+  36|                                                                
+  37| KURS LUCH  Y=   -0.1 M  GLIS=  -63.2 M
+  38|
+  39|                                                                
+  40|
+  41|
+  42|                                                                
+  43|0GLISSADA  T=   10.0 S DALN=,  14123  VYS=   461.8
+  44|
+  45|                                                                
+  46| SKOR= 125.3 M/S VERT= -60.85 M/S ATAKA=  1.0 GR TYAG=  60 PRC
+  47|
+  48|                                                                
+  49| RV=   0.0 GREL=   0.0 GRRN=   0.0 GRTANG= -29.8 GRKREN=   0.8 GRKURS=  -2.6 GR
+  50|
+  51|                                                                
+  52|                  GLISSADA 3 GR.
+  53|
+  54|                                                                
+  55|                  *                                        
+  56|
+  57|                                                                
+  58| KURS LUCH  Y=    0.4 M  GLIS= -278.3 M
+  59|
+  60|                                                                
+  61|
+  62|
+  63|                                                                
+  64|0GLISSADA  T=   15.0 S DALN=,  13514  VYS=   121.1
+  65|
+  66|                                                                
+  67| SKOR= 153.9 M/S VERT= -72.11 M/S ATAKA=  0.6 GR TYAG=  60 PRC
+  68|
+  69|                                                                
+  70| RV=   0.0 GREL=   0.0 GRRN=   0.0 GRTANG= -28.0 GRKREN=   0.3 GRKURS=   0.1 GR
+  71|
+  72|                                                                
+  73|                  GLISSADA 3 GR.
+  74|
+  75|                                                                
+  76|                  *                                        
+  77|
+  78|                                                                
+  79| KURS LUCH  Y=    2.8 M  GLIS= -587.2 M
+  80|
+  81|                                                                
+  82|
+  83|
+  84|                                                                
+  85|0GLISSADA  T=   16.7 S DALN=,  13273  VYS=    -1.1
+  86|
+  87|                                                                
+  88| SKOR= 163.1 M/S VERT= -71.09 M/S ATAKA=  0.8 GR TYAG=  60 PRC
+  89|
+  90|                                                                
+  91| RV=   0.0 GREL=   0.0 GRRN=   0.0 GRTANG= -25.9 GRKREN=  -0.1 GRKURS=  -0.1 GR
+  92|                                                                
+  93|                  GLISSADA 3 GR.
+  94|
+  95|                                                                
+  96|                  *                                        
+  97|
+  98|                                                                
+  99| KURS LUCH  Y=    3.8 M  GLIS= -696.7 M
+ 100|
+ 101|                                                                
+ 102|
+ 103|
+ 104|                                                                
+ 105|1                              OCENKA POSADKI
+ 106|
+ 107|                                                                
+ 108|
+ 109|
+ 110|                                                                
+ 111|
+ 112|
+ 113|                                                                
+ 114|0VERT. SKOROST KASAN.-71.09 M/S
+ 115|
+ 116|                                                                
+ 117| TOCHKA KASANIYA OT POROG                                                                                       0                                                                                                         e                                                                                                            
+ 118|
+ 119|
+ 120|                                                                
+ 121|DSP T=    1.0 VYS  783.0 VERT  -6.47 DALN  14927
+ 122|
+ 123|                                                                
+ 124|DSP T=    2.0 VYS  773.2 VERT -13.05 DALN  14851
+ 125|
+ 126|                                                                
+ 127|DSP T=    3.0 VYS  756.5 VERT -20.34 DALN  14772
+ 128|
+ 129|                                                                
+ 130|DSP T=    4.0 VYS  733.0 VERT -26.89 DALN  14691
+ 131|
+ 132|                                                                
+ 133|DSP T=    5.0 VYS  702.3 VERT -32.84 DALN  14606
+ 134|
+ 135|                                                                
+ 136|DSP T=    6.0 VYS  665.8 VERT -40.46 DALN  14518
+ 137|
+ 138|                                                                
+ 139|DSP T=    7.0 VYS  623.0 VERT -45.49 DALN  14425
+ 140|
+ 141|                                                                
+ 142|DSP T=    8.0 VYS  574.4 VERT -51.23 DALN  14329
+ 143|
+ 144|                                                                
+ 145|DSP T=    9.0 VYS  520.4 VERT -56.50 DALN  14228
+ 146|
+ 147|                                                                
+ 148|DSP T=   10.0 VYS  461.8 VERT -60.85 DALN  14123
+ 149|
+ 150|                                                                
+ 151|DSP T=   11.0 VYS  399.0 VERT -65.05 DALN  14012
+ 152|
+ 153|                                                                
+ 154|DSP T=   12.0 VYS  332.6 VERT -67.99 DALN  13896
+ 155|
+ 156|                                                                
+ 157|DSP T=   13.0 VYS  263.7 VERT -70.14 DALN  13775
+ 158|
+ 159|                                                                
+ 160|DSP T=   14.0 VYS  192.8 VERT -71.16 DALN  13647
+ 161|
+ 162|                                                                
+ 163|DSP T=   15.0 VYS  121.1 VERT -72.11 DALN  13514
+ 164|
+ 165|                                                                
+ 166|DSP T=   16.0 VYS   49.0 VERT -71.86 DALN  13374
+ 167|
+ 168|`
