@@ -75,3 +75,12 @@ RUNS/run-*/k46-*/2248
 RUNS/run-*/k46-*/core-pc.bin
 RUNS/run-*/k46-*/core-uic.bin
 RUNS/run-*/k46-run/mtr.txt
+
+# dd-дампы барабанов не хранятся (декод печати - отдельные файлы)
+RUNS/run-*/**/dd
+RUNS/run-*/**/dd.m*
+# вложенные каталоги прогонов (g1r-* и пр.): образы томов не хранятся
+RUNS/run-*/**/2048
+RUNS/run-*/**/2053
+RUNS/run-*/**/2099
+RUNS/run-*/**/2248
