@@ -36,6 +36,8 @@ env.update({
     'BESM6_LUN45_EXECUTE': '414',
     'BESM6_LUN46_DRUM': '020',
     'BESM6_LUN46_TRACT': '05',
+    'BESM6_NTV_TRACT': '06',
+    'BESM6_DECK': deck,        # v13: колода для k12-конверта (native-путь)
     'BESM6_DD_DEBUG': '1',
     'BESM6_EXIT_ADDR': exitaddr,
     'PATH': '/usr/bin:/bin',
