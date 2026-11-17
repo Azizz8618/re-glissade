@@ -15,7 +15,7 @@ C==============================================================
       COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
      1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
       COMMON /INERC/ JX,JY,JZ
-      GO TO (10,20,30,40),KTIP
+      GO TO (10,20,30,40,50),KTIP
    10 CONTINUE
 C     МИГ-15: ТРД РД-45Ф, КРЫЛО 20.6 М2, РАЗМАХ 10.08 М, 5000 КГ
       GM=5000.
@@ -147,5 +147,39 @@ C     АН-24: 2 ТВД АИ-24, КРЫЛО 74.98 М2, РАЗМАХ 29.2 М, 200
       JZ=380000.
       WRITE(6,940)
   940 FORMAT(1H0,13HTIP SAMOLETA:,6H AN-24)
+      RETURN
+   50 CONTINUE
+C     АН-2: АШ-62ИР, КРЫЛО 71.51 М2, РАЗМАХ 18.176 М, 5250 КГ
+C     ГЕОМЕТРИЯ ПО РЛЭ И КНИГЕ РАДЧЕНКО; ПРОИЗВОДНЫЕ - ОЦЕНКИ
+      GM=5250.
+      S=71.52
+      BB=18.18
+      CC=2.269
+      CL0=0.72
+      CLA=3.66
+      CLMX=1.95
+      CD0=0.027
+      AK=0.092
+      CMA=-0.90
+      CM0=0.02
+      CMDE=0.95
+      CMQ=-9.0
+      CLB=-0.10
+      CLDA=0.09
+      CLP=-0.35
+      CNB=-0.12
+      CNDR=-0.09
+      CNR=-0.15
+      CYB=-1.0
+      ETYPE=2.
+      THMAX=13000.
+      PMAX=735000.
+      VTHR=32.
+      HCR=2.5
+      JX=12000.
+      JY=23000.
+      JZ=38000.
+      WRITE(6,950)
+  950 FORMAT(1H0,13HTIP SAMOLETA:,5H AN-2)
       RETURN
       END
