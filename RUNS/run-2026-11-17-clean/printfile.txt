@@ -1,0 +1,571 @@
+   0|                                                                
+   1|
+   2|*                     
+   3|S
+   4|ADA  T=  140.0 S DALN=   3641  VYS=   177.9
+   5|RKRE
+   6|=  -1.8 GRKURS=   6.5 GR
+   7|
+   8|                                                                
+   9|
+  10|KURS
+  11|LUCH  Y= -105.1 M  GLIS=   -9.3 M
+  12|A=  1.0 GR TYAG=  43 PRC
+  13|
+  14|                                                                
+  15|0VERT. SKOROST KASAN. -3.67 M/S
+  16|RTA
+  17|G=  -2.5 GRKREN=  27.3 GRKURS= -16.3 GR
+  18|
+  19|                                                                
+  20| TOCHKA KASANIYA OT POROGA     -4 M
+  21|VYS
+  22|    63.7
+  23|GRKREN=  -5.2 GRKURS=  -5.6 GR
+  24|
+  25|                                                                
+  26| SMESHCHENIE OT OSI -137.7 M
+  27|
+  28|S ATAKA= -2.1 GR TYAG=  61 PRC
+  29|RS=   2.1 GR
+  30|
+  31|                                                                
+  32| SKO OT GLISSADY  13.57 M
+  33|  -8.
+  34| GRTANG=  -6.0 GRKREN=   9.2 GRKURS= -16.0 GR
+  35|
+  36|                                                                
+  37|0UDOVLETVORITELNO
+  38| GRRN= -11.5 GRTANG=  -3.7 GRKREN=  26.4 GRKURS=  -2.1 GR
+  39|
+  40|                                                                
+  41|0OCENKA= 3
+  42|
+  43|  145.0 S DALN=   3269  VYS=   160.5
+  44|KREN
+  45|   1.6 GRKURS=  -2.8 GR
+  46|
+  47|                                                                
+  48|0AVARIA: KASANIE DO POROGA
+  49|-1
+  50|.7 M
+  51|
+  52|A=  3.8 GR TYAG=  44 PRC
+  53|
+  54|URS=  -6.9 GR
+  55|
+  56|                                                                
+  57|0T=  189.9 SEKUND
+  58|
+  59|6 GRRN=   9.1 GRTANG=   4.0 GRKREN= -13.3 GRKURS= -22.9 GR
+  60|
+  61|`
+  62|0GLISSADA  T=  175.0 S DALN=   1062  VYS=    46.6
+  63|RKREN=  -9.9 GRKURS=  10.1 GR
+  64|
+  65|                                                                
+  66| SKOR=  76.5 M/S VERT=  -3.35 M/S ATAKA=  1.0 GR TYAG=  43 PRC
+  67|
+  68|URS=   1.2 GR
+  69|
+  70|                                                                
+  71| RV=   1.4 GREL=  -8.6 GRRN=   7.0 GRTANG=  -2.0 GRKREN= -31.2 GRKURS= -14.6 GR
+  72|
+  73|                                                                
+  74|                  GLISSADA 3 GR.
+  75|8
+  76|6 GRRN=  11.5 GRTANG=  -0.3 GRKREN=   4.3 GRKURS=  -1.5 GR
+  77|                                                                
+  78|                                     *                     
+  79|S
+  80|ADA  T=  150.0 S DALN=   2886  VYS=   138.2
+  81| GRK
+  82|EN=   4.5 GRKURS=   3.5 GR
+  83|
+  84|                                                                
+  85| KURS LUCH  Y=  135.9 M  GLIS=   -9.1 M
+  86|
+  87|A=  8.5 GR TYAG=  32 PRC
+  88|
+  89|RS=   1.9 GR
+  90|
+  91|                                                                
+  92|
+  93|RV=   
+  94|.1 GREL=  -8.6 GRRN= -11.5 GRTANG=   4.8 GRKREN= -40.9 GRKURS=  -7.3 GR
+  95|
+  96|                                                                
+  97|0GLISSADA  T=  180.0 S DALN=    679  VYS=    14.9
+  98|
+  99|7 GRKREN=   9.8 GRKURS=  -2.5 GR
+ 100|                                                                
+ 101| SKOR=  78.1 M/S VERT= -14.11 M/S ATAKA=  4.7 GR TYAG=  38 PRC
+ 102|S=   0.4 GR
+ 103|
+ 104|
+ 105|                                                                
+ 106| RV=   8.8 GREL=   2.5 GRRN= -11.5 GRTANG=   3.9 GRKREN= -43.6 GRKURS=   0.6 GR
+ 107|                                                                
+ 108|                  GLISSADA 3 GR.
+ 109|8
+ 110|6 GRRN= -11.5 GRTANG=   2.1 GRKREN= -26.9 GRKURS=  -6.7 GR
+ 111|
+ 112|                                                                
+ 113|                                  *                        
+ 114|S
+ 115|ADA  T=  155.0 S DALN=   2508  VYS=   112.5
+ 116|GRKR
+ 117|N=  -5.8 GRKURS=  -7.5 GR
+ 118|                                                                
+ 119| KURS LUCH  Y=  153.4 M  GLIS=  -20.7 M
+ 120|= 11.7 GR TYAG=  55 PRC
+ 121|
+ 122|URS=  -2.9 GR
+ 123|
+ 124|                                                                
+ 125|
+ 126|RV=  
+ 127|3.3 GREL=   8.6 GRRN=  -7.6 GRTANG=  10.8 GRKREN=  -6.6 GRKURS=  34.5 GR
+ 128|
+ 129|                                                                
+ 130|0GLISSADA  T=  185.0 S DALN=    339  VYS=     5.5
+ 131|1
+ 132|2 GRKREN=   9.3 GRKURS=   2.0 GR
+ 133|
+ 134|                                                                
+ 135| SKOR=  76.4 M/S VERT=  -1.43 M/S ATAKA=  6.7 GR TYAG=  64 PRC
+ 136|
+ 137|RS=   2.6 GR
+ 138|
+ 139|
+ 140|                                                                
+ 141| RV=   1.8 GREL=   8.6 GRRN= -11.5 GRTANG=   7.6 GRKREN=   7.8 GRKURS=  29.6 GR
+ 142|
+ 143|                                                                
+ 144|                  GLISSADA 3 GR.
+ 145|8
+ 146|6 GRRN=   1.8 GRTANG=   5.1 GRKREN=  -5.8 GRKURS=  20.2 GR
+ 147|
+ 148|                                                                
+ 149|                                    *                      
+ 150|S
+ 151|ADA  T=  160.0 S DALN=   2162  VYS=   103.8
+ 152|RKRE
+ 153|=  -2.2 GRKURS=   7.7 GR
+ 154|
+ 155|                                                                
+ 156| KURS LUCH  Y=    8.2 M  GLIS=  -12.2 M
+ 157|A
+ 158|A=  2.0 GR TYAG=  51 PRC
+ 159|
+ 160|RS=   1.4 GR
+ 161|
+ 162|                                                                
+ 163|
+ 164|RV=   
+ 165|.1 GREL=   8.6 GRRN=  11.5 GRTANG=   0.8 GRKREN=  19.4 GRKURS=  19.1 GR
+ 166|
+ 167|                                                                
+ 168|0GLISSADA  T=  189.9 S DALN=      4  VYS=     2.2
+ 169|=   2
+ 170|6 GRKREN= -15.9 GRKURS=  -7.8 GR
+ 171|
+ 172|                                                                
+ 173| SKOR=  76.9 M/S VERT=  -3.67 M/S ATAKA=  7.3 GR TYAG=  50 PRC
+ 174|
+ 175|S=  -4.0 GR
+ 176|
+ 177|
+ 178|                                                                
+ 179| RV=   3.4 GREL=   8.6 GRRN=  11.5 GRTANG=   4.8 GRKREN=  33.8 GRKURS=  14.6 GR
+ 180|
+ 181|                                                                
+ 182|                  GLISSADA 3 GR.
+ 183|.
+ 184| GRRN=  -0.9 GRTANG=   2.9 GRKREN=  24.2 GRKURS=  -0.7 GR
+ 185|
+ 186|                                                                
+ 187|                                      *                    
+ 188|S
+ 189|ADA  T=  165.0 S DALN=   1783  VYS=    84.1
+ 190|.1 GRKREN=  10.6 GRKURS=  -4.7 GR
+ 191|
+ 192|                                                                
+ 193| KURS LUCH  Y= -137.7 M  GLIS=    2.0 M
+ 194|
+ 195|A=  1.3 GR TYAG=  40 PRC
+ 196|
+ 197|URS=  -3.2 GR
+ 198|
+ 199|                                                                
+ 200|
+ 201|RV=   
+ 202|.3 GREL=  -6.7 GRRN= -11.5 GRTANG=  -7.1 GRKREN=  48.3 GRKURS= -13.6 GR
+ 203|
+ 204|                                                                
+ 205|1                              OCENKA POSADKI
+ 206|
+ 207| GRRN=  11.5 GRTANG=  -0.6 GRKREN=  -7.2 GRKURS=  11.5 GR
+ 208|
+ 209|                                                                
+ 210|
+ 211|*                     
+ 212|S
+ 213|ADA  T=  140.0 S DALN=   3641  VYS=   177.9
+ 214|RKRE
+ 215|=  -1.8 GRKURS=   6.5 GR
+ 216|
+ 217|                                                                
+ 218|
+ 219|KURS
+ 220|LUCH  Y= -105.1 M  GLIS=   -9.3 M
+ 221|A=  1.0 GR TYAG=  43 PRC
+ 222|
+ 223|                                                                
+ 224|0VERT. SKOROST KASAN. -3.67 M/S
+ 225|RTA
+ 226|G=  -2.5 GRKREN=  27.3 GRKURS= -16.3 GR
+ 227|
+ 228|                                                                
+ 229| TOCHKA KASANIYA OT POROGA     -4 M
+ 230|VYS
+ 231|    63.7
+ 232|GRKREN=  -5.2 GRKURS=  -5.6 GR
+ 233|
+ 234|                                                                
+ 235| SMESHCHENIE OT OSI -137.7 M
+ 236|
+ 237|S ATAKA= -2.1 GR TYAG=  61 PRC
+ 238|RS=   2.1 GR
+ 239|
+ 240|                                                                
+ 241| SKO OT GLISSADY  13.57 M
+ 242|  -8.
+ 243| GRTANG=  -6.0 GRKREN=   9.2 GRKURS= -16.0 GR
+ 244|
+ 245|                                                                
+ 246|0UDOVLETVORITELNO
+ 247| GRRN= -11.5 GRTANG=  -3.7 GRKREN=  26.4 GRKURS=  -2.1 GR
+ 248|
+ 249|                                                                
+ 250|0OCENKA= 3
+ 251|
+ 252|  145.0 S DALN=   3269  VYS=   160.5
+ 253|KREN
+ 254|   1.6 GRKURS=  -2.8 GR
+ 255|
+ 256|                                                                
+ 257|0AVARIA: KASANIE DO POROGA
+ 258|-1
+ 259|.7 M
+ 260|
+ 261|A=  3.8 GR TYAG=  44 PRC
+ 262|
+ 263|URS=  -6.9 GR
+ 264|
+ 265|                                                                
+ 266|0T=  189.9 SEKUND
+ 267|
+ 268|6 GRRN=   9.1 GRTANG=   4.0 GRKREN= -13.3 GRKURS= -22.9 GR
+ 269|
+ 270|`
+ 271|0GLISSADA  T=  175.0 S DALN=   1062  VYS=    46.6
+ 272|RKREN=  -9.9 GRKURS=  10.1 GR
+ 273|
+ 274|                                                                
+ 275| SKOR=  76.5 M/S VERT=  -3.35 M/S ATAKA=  1.0 GR TYAG=  43 PRC
+ 276|
+ 277|URS=   1.2 GR
+ 278|
+ 279|                                                                
+ 280| RV=   1.4 GREL=  -8.6 GRRN=   7.0 GRTANG=  -2.0 GRKREN= -31.2 GRKURS= -14.6 GR
+ 281|
+ 282|                                                                
+ 283|                  GLISSADA 3 GR.
+ 284|8
+ 285|6 GRRN=  11.5 GRTANG=  -0.3 GRKREN=   4.3 GRKURS=  -1.5 GR
+ 286|                                                                
+ 287|                                     *                     
+ 288|S
+ 289|ADA  T=  150.0 S DALN=   2886  VYS=   138.2
+ 290| GRK
+ 291|EN=   4.5 GRKURS=   3.5 GR
+ 292|
+ 293|                                                                
+ 294| KURS LUCH  Y=  135.9 M  GLIS=   -9.1 M
+ 295|
+ 296|A=  8.5 GR TYAG=  32 PRC
+ 297|
+ 298|RS=   1.9 GR
+ 299|
+ 300|                                                                
+ 301|
+ 302|RV=   
+ 303|.1 GREL=  -8.6 GRRN= -11.5 GRTANG=   4.8 GRKREN= -40.9 GRKURS=  -7.3 GR
+ 304|
+ 305|                                                                
+ 306|0GLISSADA  T=  180.0 S DALN=    679  VYS=    14.9
+ 307|
+ 308|7 GRKREN=   9.8 GRKURS=  -2.5 GR
+ 309|                                                                
+ 310| SKOR=  78.1 M/S VERT= -14.11 M/S ATAKA=  4.7 GR TYAG=  38 PRC
+ 311|S=   0.4 GR
+ 312|
+ 313|
+ 314|                                                                
+ 315| RV=   8.8 GREL=   2.5 GRRN= -11.5 GRTANG=   3.9 GRKREN= -43.6 GRKURS=   0.6 GR
+ 316|                                                                
+ 317|                  GLISSADA 3 GR.
+ 318|8
+ 319|6 GRRN= -11.5 GRTANG=   2.1 GRKREN= -26.9 GRKURS=  -6.7 GR
+ 320|
+ 321|                                                                
+ 322|                                  *                        
+ 323|S
+ 324|ADA  T=  155.0 S DALN=   2508  VYS=   112.5
+ 325|GRKR
+ 326|N=  -5.8 GRKURS=  -7.5 GR
+ 327|                                                                
+ 328| KURS LUCH  Y=  153.4 M  GLIS=  -20.7 M
+ 329|= 11.7 GR TYAG=  55 PRC
+ 330|
+ 331|URS=  -2.9 GR
+ 332|
+ 333|                                                                
+ 334|
+ 335|RV=  
+ 336|3.3 GREL=   8.6 GRRN=  -7.6 GRTANG=  10.8 GRKREN=  -6.6 GRKURS=  34.5 GR
+ 337|
+ 338|                                                                
+ 339|0GLISSADA  T=  185.0 S DALN=    339  VYS=     5.5
+ 340|1
+ 341|2 GRKREN=   9.3 GRKURS=   2.0 GR
+ 342|
+ 343|                                                                
+ 344| SKOR=  76.4 M/S VERT=  -1.43 M/S ATAKA=  6.7 GR TYAG=  64 PRC
+ 345|
+ 346|RS=   2.6 GR
+ 347|
+ 348|
+ 349|                                                                
+ 350| RV=   1.8 GREL=   8.6 GRRN= -11.5 GRTANG=   7.6 GRKREN=   7.8 GRKURS=  29.6 GR
+ 351|
+ 352|                                                                
+ 353|                  GLISSADA 3 GR.
+ 354|8
+ 355|6 GRRN=   1.8 GRTANG=   5.1 GRKREN=  -5.8 GRKURS=  20.2 GR
+ 356|
+ 357|                                                                
+ 358|                                    *                      
+ 359|S
+ 360|ADA  T=  160.0 S DALN=   2162  VYS=   103.8
+ 361|RKRE
+ 362|=  -2.2 GRKURS=   7.7 GR
+ 363|
+ 364|                                                                
+ 365| KURS LUCH  Y=    8.2 M  GLIS=  -12.2 M
+ 366|A
+ 367|A=  2.0 GR TYAG=  51 PRC
+ 368|
+ 369|RS=   1.4 GR
+ 370|
+ 371|                                                                
+ 372|
+ 373|RV=   
+ 374|.1 GREL=   8.6 GRRN=  11.5 GRTANG=   0.8 GRKREN=  19.4 GRKURS=  19.1 GR
+ 375|
+ 376|                                                                
+ 377|0GLISSADA  T=  189.9 S DALN=      4  VYS=     2.2
+ 378|=   2
+ 379|6 GRKREN= -15.9 GRKURS=  -7.8 GR
+ 380|
+ 381|                                                                
+ 382| SKOR=  76.9 M/S VERT=  -3.67 M/S ATAKA=  7.3 GR TYAG=  50 PRC
+ 383|
+ 384|S=  -4.0 GR
+ 385|
+ 386|
+ 387|                                                                
+ 388| RV=   3.4 GREL=   8.6 GRRN=  11.5 GRTANG=   4.8 GRKREN=  33.8 GRKURS=  14.6 GR
+ 389|
+ 390|                                                                
+ 391|                  GLISSADA 3 GR.
+ 392|.
+ 393| GRRN=  -0.9 GRTANG=   2.9 GRKREN=  24.2 GRKURS=  -0.7 GR
+ 394|
+ 395|                                                                
+ 396|                                      *                    
+ 397|S
+ 398|ADA  T=  165.0 S DALN=   1783  VYS=    84.1
+ 399|.1 GRKREN=  10.6 GRKURS=  -4.7 GR
+ 400|
+ 401|                                                                
+ 402| KURS LUCH  Y= -137.7 M  GLIS=    2.0 M
+ 403|
+ 404|A=  1.3 GR TYAG=  40 PRC
+ 405|
+ 406|URS=  -3.2 GR
+ 407|
+ 408|                                                                
+ 409|
+ 410|RV=   
+ 411|.3 GREL=  -6.7 GRRN= -11.5 GRTANG=  -7.1 GRKREN=  48.3 GRKURS= -13.6 GR
+ 412|
+ 413|                                                                
+ 414|1                              OCENKA POSADKI
+ 415|
+ 416| GRRN=  11.5 GRTANG=  -0.6 GRKREN=  -7.2 GRKURS=  11.5 GR
+ 417|                                                                
+ 418|DSP T=  157.0 VYS  114.8 VERT  -8.09 DALN   2373
+ 419|
+ 420|                                                                
+ 421|DSP T=  158.0 VYS  107.1 VERT  -5.25 DALN   2304
+ 422|
+ 423|                                                                
+ 424|DSP T=  159.0 VYS  104.6 VERT  -0.44 DALN   2233
+ 425|
+ 426|                                                                
+ 427|DSP T=  160.0 VYS  103.8 VERT  -1.96 DALN   2162
+ 428|
+ 429|                                                                
+ 430|DSP T=  161.0 VYS  101.0 VERT  -2.97 DALN   2089
+ 431|
+ 432|                                                                
+ 433|DSP T=  162.0 VYS   96.8 VERT  -6.55 DALN   2014
+ 434|
+ 435|
+ 436|                                                                
+ 437|DSP T=  163.0 VYS   89.6 VERT  -6.57 DALN   1937
+ 438|
+ 439|
+ 440|                                                                
+ 441|DSP T=  164.0 VYS   85.8 VERT  -1.32 DALN   1859
+ 442|
+ 443|
+ 444|                                                                
+ 445|DSP T=  165.0 VYS   84.1 VERT  -3.89 DALN   1783
+ 446|
+ 447|
+ 448|                                                                
+ 449|DSP T=  166.0 VYS   76.1 VERT -11.98 DALN   1707
+ 450|
+ 451|                                                                
+ 452|DSP T=  167.0 VYS   63.5 VERT -10.21 DALN   1630
+ 453|
+ 454|                                                                
+ 455|DSP T=  168.0 VYS   59.4 VERT   2.55 DALN   1556
+ 456|4
+ 457|
+ 458|                                                                
+ 459|DSP T=  169.0 VYS   65.1 VERT   4.50 DALN   1487
+ 460|6
+ 461|
+ 462|                                                                
+ 463|DSP T=  170.0 VYS   63.7 VERT  -6.88 DALN   1419
+ 464|
+ 465|
+ 466|                                                                
+ 467|DSP T=  171.0 VYS   55.8 VERT  -6.51 DALN   1350
+ 468|
+ 469|
+ 470|                                                                
+ 471|DSP T=  172.0 VYS   52.2 VERT  -1.92 DALN   1280
+ 472|
+ 473|
+ 474|                                                                
+ 475|DSP T=  173.0 VYS   50.3 VERT  -1.51 DALN   1209
+ 476|
+ 477|
+ 478|                                                                
+ 479|DSP T=  174.0 VYS   48.6 VERT  -1.69 DALN   1137
+ 480|
+ 481|
+ 482|                                                                
+ 483|DSP T=  175.0 VYS   46.6 VERT  -3.35 DALN   1062
+ 484|
+ 485|
+ 486|                                                                
+ 487|DSP T=  176.0 VYS   41.0 VERT  -6.98 DALN    987
+ 488|3
+ 489|
+ 490|                                                                
+ 491|DSP T=  177.0 VYS   35.0 VERT  -4.16 DALN    910
+ 492|4
+ 493|
+ 494|                                                                
+ 495|DSP T=  178.0 VYS   32.4 VERT  -2.20 DALN    832
+ 496|6
+ 497|
+ 498|                                                                
+ 499|DSP T=  179.0 VYS   27.4 VERT  -9.04 DALN    756
+ 500|1
+ 501|
+ 502|                                                                
+ 503|DSP T=  180.0 VYS   14.9 VERT -14.11 DALN    679
+ 504|
+ 505|
+ 506|                                                                
+ 507|DSP T=  181.0 VYS    5.2 VERT  -3.38 DALN    603
+ 508|
+ 509|0
+ 510|
+ 511|                                                                
+ 512|DSP T=  182.0 VYS    7.6 VERT   7.04 DALN    533
+ 513|4
+ 514|7
+ 515|
+ 516|                                                                
+ 517|DSP T=  183.0 VYS   13.1 VERT   1.61 DALN    469
+ 518|
+ 519|3
+ 520|
+ 521|                                                                
+ 522|DSP T=  184.0 VYS    9.9 VERT  -6.30 DALN    405
+ 523|
+ 524|9
+ 525|
+ 526|                                                                
+ 527|DSP T=  185.0 VYS    5.5 VERT  -1.43 DALN    339
+ 528|
+ 529|4
+ 530|
+ 531|                                                                
+ 532|DSP T=  186.0 VYS    5.9 VERT   1.84 DALN    273
+ 533|1
+ 534|9
+ 535|
+ 536|                                                                
+ 537|DSP T=  187.0 VYS    7.5 VERT   0.96 DALN    207
+ 538|0
+ 539|2
+ 540|
+ 541|                                                                
+ 542|DSP T=  188.0 VYS    7.4 VERT  -1.04 DALN    139
+ 543|
+ 544|4
+ 545|
+ 546|                                                                
+ 547|DSP T=  189.0 VYS    5.7 VERT  -2.73 DALN     68
+ 548|8
+ 549|6
+ 550|
+ 551|`
+ 552|DSP T=  151.0 VYS  133.0 VERT  -2.01 DALN   2807
+ 553|
+ 554|                                                                
+ 555|DSP T=  152.0 VYS  132.2 VERT  -1.55 DALN   2730
+ 556|
+ 557|                                                                
+ 558|DSP T=  153.0 VYS  126.3 VERT -11.12 DALN   2656
+ 559|
+ 560|                                                                
+ 561|DSP T=  154.0 VYS  114.0 VERT  -9.23 DALN   2581
+ 562|
+ 563|                                                                
+ 564|DSP T=  155.0 VYS  112.5 VERT   5.48 DALN   2508
+ 565|
+ 566|
+ 567|                                                                
+ 568|DSP T=  156.0 VYS  118.3 VERT   2.54 DALN   2440
+ 569|
+ 570|
