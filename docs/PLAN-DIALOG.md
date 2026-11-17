@@ -77,7 +77,48 @@ Pascal-библиотеки нет; `graf.pas` уже является БЭСМ-
 
 ---
 
-## 5. Этапы
+## 5. Вызовы Fortran из Pascal — подтверждённая модель
+
+Штатный механизм ДИСПАК: внешняя фортран-подпрограмма объявляется
+`PROCEDURE ИМЯ(...); FORTRAN;`. Параметры со словом `VAR` передаются
+**по ссылке** (адрес ячейки с адресом данных), остальные — по значению.
+`INTEGER`/`REAL` — одно 48-битное слово; `DIMENSION X(13)` ↔
+`ARRAY[1..13] OF REAL`. Компилятор генерирует мост `P/MF`.
+
+Имена укладываются в 6 литер, так что `INITD`, `PROIZV`, `GLAUTO`,
+`MOTOR`, `TURB`, `JUDG`, `FRAME`, `DISPL` линкуются без проблем.
+`GLMAIN.FTN` — главная программа, её не вызывать: Pascal становится
+ведущей, а цикл РК4 переносится в оболочку (4 вызова `PROIZV` на шаг).
+
+Пример объявлений (требует проверки компиляцией):
+
+```pascal
+PROGRAM GLDIAL(INPUT,OUTPUT); (*=S7,L3,U+*)
+TYPE VEC13=ARRAY[1..13] OF REAL; VEC4=ARRAY[1..4] OF REAL;
+VAR X:VEC13; U:VEC4; XD:VEC13; KTIP:INTEGER;
+PROCEDURE INITD(VAR KTIP:INTEGER); FORTRAN;
+PROCEDURE PROIZV(VAR X:VEC13; VAR U:VEC4; VAR XD:VEC13); FORTRAN;
+PROCEDURE GLAUTO(VAR X:VEC13; VAR U:VEC4); FORTRAN;
+PROCEDURE MOTOR(VAR DTZ,VA,TH:REAL); FORTRAN;
+ PROCEDURE TURB; FORTRAN;
+ PROCEDURE JUDG(VAR X:VEC13); FORTRAN;
+ PROCEDURE DISPL(VAR X:VEC13); FORTRAN;   (* канал 12 *)
+```
+
+Ввод-диалог: `PASBIND`/`PASRED` (запись `buflen,inplen,A[1..140]`,
+рабочий пример — `besm-crypto/golden/gost_08.05.2025.pas`) либо модель
+`graf.pas`: `WRITELN(меню)` + `INPUT↑`/`GET`. Фортранный `PRVIN`
+(канал 5) в диалоге заменить. COMMON-мост (`/SOST/`, `/GLOB/`) требует
+проверки листа загрузки; при необходимости добавить аксессоры
+`GLSET/GLGET` или дублировать константы в Pascal.
+
+Сборка — одна колода: `*NAME`, `*CALL YESMEMORY`, `*CALL *PASCAL`
+(оболочка), `*FORTRAN` (`SRC/GL*.FTN` кроме `GLMAIN`, с `GLNUMR`),
+`*EXECUTE`. Не полагаться на `*LIBRARY`/PERSO — вDispак тупик.
+
+---
+
+## 6. Этапы
 
 1. **Интерфейс Fortran → драйвер.** Определить, какие переменные кадра
    (`T, DTM, X(13), VA, X(2), ALFA, U(4), THETA, GAM, PSI, EGLI` из
@@ -98,7 +139,13 @@ Pascal-библиотеки нет; `graf.pas` уже является БЭСМ-
 
 ---
 
-## 6. Что НЕ делать
+**Контрольная точка перед реализацией:** прогнать минимальную пару
+`PROGRAM M` (из `pascal-re/AGENTS.md`) вDispак, снять лист загрузки и
+убедиться, что мост `P/MF` и COMMON-имена совпадают.
+
+---
+
+## 7. Что НЕ делать
 
 - Не пытаться «дотянуть» МС-7401 через `set ttyN dks,raw` — линия
   текстовая, по принципу другая.
