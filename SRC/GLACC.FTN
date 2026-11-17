@@ -1,9 +1,11 @@
 C==============================================================
 C     ГЛИССАДА-6. АКСЕССОРЫ COMMON ДЛЯ ПАСКАЛЬ-ОБОЛОЧКИ.
 C     ПАСКАЛЬ ВЫЗЫВАЕТ ИХ КАК FORTRAN-ПОДПРОГРАММЫ.
+C     ФИКТИВНЫЕ АРГУМЕНТЫ НЕ ДОЛЖНЫ СОВПАДАТЬ С ИМЕНАМИ COMMON.
 C==============================================================
-      SUBROUTINE GLSET(T,DT,K,M,IC,NR,IF,TM)
+      SUBROUTINE GLSET(TIN,DT,K,M,IC,NR,IF,TM)
       COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      T=TIN
       DTSHAG=DT
       KTIP=K
       MODE=M
@@ -12,28 +14,37 @@ C==============================================================
       IFLIB=IF
       TMAX=TM
       END
-      SUBROUTINE GLT(T)
+      SUBROUTINE GLT(TOUT)
       COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      TOUT=T
       END
-      SUBROUTINE GLSOST(VTH,HCR)
+      SUBROUTINE GLSOST(VTHO,HCRO)
       COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
      1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTH,HCR
+      VTHO=VTH
+      HCRO=HCR
       END
-      SUBROUTINE GLBUR(SIG,TAU,WX,WY,WZ)
+      SUBROUTINE GLSEED(RS)
+      COMMON /SBSEED/ RSEED
+      RSEED=RS
+      END
+      SUBROUTINE GLBUR(SIG,TAUIN,WX,WY,WZ)
       COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
       WGX=WX
       WGY=WY
       WGZ=WZ
       SIGW=SIG
+      TAU=TAUIN
       END
       SUBROUTINE GLSC(SU,NE)
       COMMON /SCHET/ SUME,NEGL
       SUME=SU
       NEGL=NE
       END
-      SUBROUTINE GLVOD(VA,ALF)
+      SUBROUTINE GLVOD(VAOUT,ALF)
       COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
       ALF=ALFA
+      VAOUT=VA
       END
       SUBROUTINE GLANG(X,TH,GA,PS,DTM,EG,IP)
       DIMENSION X(13)

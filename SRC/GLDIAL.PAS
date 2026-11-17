@@ -12,10 +12,10 @@ type VEC13=array[1..13] of real;
      end;
 var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     U:VEC4; B:ARG; CMD:alfa;
-    T,TMAX,RSEED,SIGW,DT0,DTSH,TAU,SUME,EGLI,DTM:real;
+    T,TMAX,RSEED,SIGW,DT0,DTSH,TAU,SUME,EGLI,DTM,ZERO,AVY:real;
     QN,VA,ALF,TH,GA,PS,VTHR,VHCR:real;
     KTIP,MODE,ICTRL,NFR,IFLIB,NPRN,NMAX,NSTP,NEGL,IPOS:integer;
-    I,J,IH,JA,JG,IB,K:integer; OK,RUN,PAUS:boolean;
+    I,J,IH,JA,JG,IB,K,OCE:integer; OK,RUN,PAUS:boolean;
 (* диалог *)
 procedure PASRED(var D:ARG); external;
 (* ядро *)
@@ -27,10 +27,11 @@ procedure TURB; fortran;
 procedure PRVIN; fortran;
 procedure JUDG(var X:VEC13); fortran;
 (* аксессоры GLACC *)
-procedure GLSET(var T,DT:real; var K,M,IC,NR,IF:integer;
+procedure GLSET(var T,DT:real; var K,M,IC,NR,IFL:integer;
            var TM:real); fortran;
 procedure GLT(var T:real); fortran;
 procedure GLSOST(var VTH,HCR:real); fortran;
+procedure GLSEED(var RS:real); fortran;
 procedure GLBUR(var SIG,TAU,WX,WY,WZ:real); fortran;
 procedure GLSC(var SU:real; var NE:integer); fortran;
 procedure GLVOD(var VA,ALF:real); fortran;
@@ -114,9 +115,10 @@ end;
 (************************************************************)
 procedure INIT;
 begin
-  DTSH:=H; TAU:=1.0;
-  GLSET(0.0,H,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX);
-  GLBUR(SIGW,TAU,0.0,0.0,0.0);
+  DTSH:=H; TAU:=1.0; ZERO:=0.0;
+  GLSET(ZERO,DTSH,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX);
+  GLSEED(RSEED);
+  GLBUR(SIGW,TAU,ZERO,ZERO,ZERO);
   INITD(KTIP);
   GLSOST(VTHR,VHCR);
   X[1]:=VTHR; X[2]:=0.0; X[3]:=0.0;
@@ -136,7 +138,7 @@ procedure DOSTP;
 var I:integer;
 begin
   T:=T+DTSH;
-  GLSET(T,H,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX);
+  GLSET(T,DTSH,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX);
   if MODE=1 then GLAUTO(X,U) else PROGC(T,U);
   TURB;
   PROIZV(X,U,VK1);
@@ -160,22 +162,22 @@ var I,J,IH,JA,IB:integer; HGL:real;
 begin
   GLANG(X,TH,GA,PS,DTM,EGLI,IPOS);
   GLVOD(VA,ALF);
-  IB:=21+IFIX(X[12]/5.);
+  IB:=21+TRUNC(X[12]/5.0);
   if IB<1 then IB:=1;
   if IB>41 then IB:=41;
   writeln;
   writeln('T=',T:7:1,' TIP=',KTIP:1,' DALN=',DTM:7:0,
           ' VYS=',X[13]:7:1,' Y=',X[12]:7:1);
   writeln(' VYS PROFILE             | PLAN SVERHU');
-  JA:=31-IFIX(DTM/500.);
+  JA:=31-TRUNC(DTM/500.0);
   for IH:=8 downto 0 do
   begin
     write(' ',IH*100:4,' |');
     for J:=1 to 30 do
     begin
       HGL:=0.05241*(31-J)*500.0;
-      if (IH=IFIX(X[13]/100.0)) and (J=JA) then write('*')
-      else if IFIX(HGL/100.0)=IH then write('.')
+      if (IH=TRUNC(X[13]/100.0)) and (J=JA) then write('*')
+      else if TRUNC(HGL/100.0)=IH then write('.')
       else if IH=0 then write('=')
       else write(' ')
     end;
@@ -199,8 +201,7 @@ end;
 procedure CMDLOOP(var CMD:alfa);
 begin
   writeln('CMD: STA/STE/STO/PAR/PRN/EXIT');
-  if ICTRL=1 then begin ASK; GTALF(CMD) end
-  else read(input,CMD)
+  ASK; GTALF(CMD)
 end;
 (************************************************************)
 begin
@@ -212,12 +213,12 @@ begin
     begin
       CMDLOOP(CMD);
       select
-        CMD='STA': begin RUN:=true; PAUS:=false end;
-        CMD='STE': begin DOSTP; PRFRM; PAUS:=true end;
-        CMD='STO': begin RUN:=false; PAUS:=true end;
-        CMD='PAR': begin PARAMS; INIT; PAUS:=true end;
-        CMD='PRN': PRFRM;
-        CMD='EXIT': begin writeln('EXIT'); stop end;
+        CMD='STA   ': begin RUN:=true; PAUS:=false end;
+        CMD='STE   ': begin DOSTP; PRFRM; PAUS:=true end;
+        CMD='STO   ': begin RUN:=false; PAUS:=true end;
+        CMD='PAR   ': begin PARAMS; INIT; PAUS:=true end;
+        CMD='PRN   ': PRFRM;
+        CMD='EXIT  ': begin writeln('EXIT'); stop end;
         true: writeln('NEPR. KOMANDA')
       end
     end;
@@ -227,7 +228,13 @@ begin
       if (NSTP mod NPRN)=0 then PRFRM;
       if X[13]<=VHCR then
       begin
-        PRFRM; GLSC(SUME,NEGL); JUDG(X); RUN:=false; PAUS:=true
+        PRFRM; GLSC(SUME,NEGL); JUDG(X);
+        AVY:=abs(X[2]); OCE:=4;
+        if AVY<=4.0 then OCE:=3;
+        if AVY<=2.5 then OCE:=2;
+        if AVY<=1.5 then OCE:=1;
+        writeln('OCENKA= ',OCE:1);
+        RUN:=false; PAUS:=true
       end;
       if X[13] < -100.0 then
       begin writeln('AVARIA: RAZRUSHENIE'); RUN:=false; PAUS:=true end;
