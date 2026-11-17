@@ -7,11 +7,23 @@ C==============================================================
       COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
      1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
       COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
 C     ВЕРТИКАЛЬНЫЙ КАНАЛ: ЗАДАННАЯ ВЕРТ. СКОРОСТЬ ПО ГЛИССАДЕ
+C     КОЭФФИЦИЕНТЫ ПОДОБРАНЫ ДЛЯ КАЖДОГО ТИПА ОТДЕЛЬНО
       EGLI=X(13)+0.05241*X(11)
-      VYC=-0.05241*X(1)-0.08*EGLI
+      GO TO (100,100,300,400),KTIP
+  100 VYC=-0.05241*X(1)-0.15*EGLI
+      IF(X(13).LT.HCR+40.) VYC=-0.4
+      DE=-0.06*(X(2)-VYC)-0.5*X(10)
+      GO TO 150
+  300 VYC=-0.05241*X(1)-0.08*EGLI
       IF(X(13).LT.HCR+12.) VYC=-0.7
       DE=-0.025*(X(2)-VYC)-0.5*X(10)
+      GO TO 150
+  400 VYC=-0.05241*X(1)-0.08*EGLI
+      IF(X(13).LT.HCR+30.) VYC=-0.5
+      DE=-0.04*(X(2)-VYC)-0.5*X(10)
+  150 CONTINUE
       IF(DE.GT.0.30) DE=0.30
       IF(DE.LT.-0.30) DE=-0.30
       U(1)=DE
