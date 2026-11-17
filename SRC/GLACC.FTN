@@ -1,0 +1,57 @@
+C==============================================================
+C     ГЛИССАДА-6. АКСЕССОРЫ COMMON ДЛЯ ПАСКАЛЬ-ОБОЛОЧКИ.
+C     ПАСКАЛЬ ВЫЗЫВАЕТ ИХ КАК FORTRAN-ПОДПРОГРАММЫ.
+C==============================================================
+      SUBROUTINE GLSET(T,DT,K,M,IC,NR,IF,TM)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      DTSHAG=DT
+      KTIP=K
+      MODE=M
+      ICTRL=IC
+      NFR=NR
+      IFLIB=IF
+      TMAX=TM
+      END
+      SUBROUTINE GLT(T)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      END
+      SUBROUTINE GLSOST(VTH,HCR)
+      COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
+     1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTH,HCR
+      END
+      SUBROUTINE GLBUR(SIG,TAU,WX,WY,WZ)
+      COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
+      WGX=WX
+      WGY=WY
+      WGZ=WZ
+      SIGW=SIG
+      END
+      SUBROUTINE GLSC(SU,NE)
+      COMMON /SCHET/ SUME,NEGL
+      SUME=SU
+      NEGL=NE
+      END
+      SUBROUTINE GLVOD(VA,ALF)
+      COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
+      ALF=ALFA
+      END
+      SUBROUTINE GLANG(X,TH,GA,PS,DTM,EG,IP)
+      DIMENSION X(13)
+      COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
+      Q0=X(4)
+      A11=Q0*Q0+X(5)*X(5)-X(6)*X(6)-X(7)*X(7)
+      A21=2.*(X(5)*X(6)+Q0*X(7))
+      A31=2.*(X(5)*X(7)-Q0*X(6))
+      A22=Q0*Q0-X(5)*X(5)+X(6)*X(6)-X(7)*X(7)
+      A32=2.*(X(6)*X(7)+Q0*X(5))
+      ST=A21
+      IF(ABS(ST).GT.0.999) ST=SIGN(0.999,ST)
+      TH=ATAN(ST/SQRT(1.-ST*ST))*57.2958
+      PS=ATAN2(-A31,A11)*57.2958
+      GA=ATAN2(A32,A22)*57.2958
+      DTM=-X(11)
+      EG=X(13)+0.05241*X(11)
+      IP=21+IFIX(EG/5.)
+      IF(IP.LT.1) IP=1
+      IF(IP.GT.41) IP=41
+      END
