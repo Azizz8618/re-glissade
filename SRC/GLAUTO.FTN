@@ -8,20 +8,27 @@ C==============================================================
      1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
       COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
       COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
 C     ВЕРТИКАЛЬНЫЙ КАНАЛ: ЗАДАННАЯ ВЕРТ. СКОРОСТЬ ПО ГЛИССАДЕ
 C     КОЭФФИЦИЕНТЫ ПОДОБРАНЫ ДЛЯ КАЖДОГО ТИПА ОТДЕЛЬНО
       EGLI=X(13)+0.05241*X(11)
       GO TO (100,200,300,400),KTIP
-  100 VYC=-0.05241*X(1)-0.50*EGLI
+  100 GE=0.50
+      IF(SIGW.GT.0.) GE=0.08
+      VYC=-0.05241*X(1)-GE*EGLI
       IF(X(13).LT.HCR+30.) VYC=-0.5
       DE=-0.04*(X(2)-VYC)-0.5*X(10)
       GO TO 150
   200 EGLI=EGLI-18.
-      VYC=-0.05241*X(1)-0.50*EGLI
+      GE=0.50
+      IF(SIGW.GT.0.) GE=0.08
+      VYC=-0.05241*X(1)-GE*EGLI
       IF(X(13).LT.HCR+40.) VYC=-0.4
       DE=-0.06*(X(2)-VYC)-0.5*X(10)
       GO TO 150
-  300 VYC=-0.05241*X(1)-0.50*EGLI
+  300 GE=0.50
+      IF(SIGW.GT.0.) GE=0.08
+      VYC=-0.05241*X(1)-GE*EGLI
       IF(X(13).LT.HCR+12.) VYC=-0.7
       DE=-0.025*(X(2)-VYC)-0.5*X(10)
       GO TO 150
