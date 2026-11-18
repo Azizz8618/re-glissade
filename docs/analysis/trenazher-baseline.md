@@ -5,7 +5,7 @@
 
 ## Диск и библиотека
 
-- `~/.besm6/2348`, md5 `cde02f7c1d133ebd272221fdd90783af`.
+- `~/.besm6/2348`, md5 `f7425f179706c16e29ba83bfcf429877`.
 - Зона `2700(8)` — 6 зон, 25 входов:
   `GLDIAL`, `PROGRAM`, `GLANG`, `GLVOD`, `GLSC`, `GLBUR`, `GLSEED`,
   `GLSOST`, `GLT`, `GLSET`, `JUDG`, `DISPL`, `FRAME`, `TURB`, `SBRND`,

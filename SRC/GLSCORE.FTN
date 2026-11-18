@@ -7,26 +7,36 @@ C       YLIM  - ПРЕДЕЛ СМЕЩЕНИЯ ОТ ОСИ, М,
 C       GLIM  - ПРЕДЕЛ СКО ОТ ГЛИССАДЫ, М,
 C       OVLIM - ПРЕДЕЛ ПЕРЕУПРАВЛЕНИЯ (СУММА |DU|), РАД,
 C       SMLIM - ПРЕДЕЛ НЕПЛАВНОСТИ (СУММА |D2U|), РАД,
-C       WVERT,WTOCH,WGLIS,WUPR,WPLAV - ВЕСА КОМПОНЕНТ,
+C       WVERT,WTOCH,WY,WGLIS,WUPR,WPLAV - ВЕСА КОМПОНЕНТ,
 C       PLIM  - ПОРОГ ЗАЧЁТА.
 C     /SCORE/ - РЕЗУЛЬТАТ: RVERT,RTOCH,RY,SKO,UPR,PLAV,TOT,ISCR,NKAD.
 C     /OLDU/ - ДВА ПРЕДЫДУЩИХ ЗНАЧЕНИЯ УПРАВЛЕНИЯ.
+C     /SCQAL/ - КАЧЕСТВО КОМПОНЕНТ ДЛЯ ДЕБРИФИНГА.
 C     ИМЯ БУФЕРОВ НЕ ПРЕВЫШАЕТ 6 ЛИТЕР (ТРЕБОВАНИЕ ФОРЭКС).
 C==============================================================
       BLOCK DATA SCPBLK
       COMMON /SCPAR/ VY1,VY2,VY3,DTLIM,YLIM,GLIM,OVLIM,SMLIM,
-     1WVERT,WTOCH,WGLIS,WUPR,WPLAV,PLIM
+     1WVERT,WTOCH,WY,WGLIS,WUPR,WPLAV,PLIM
       COMMON /SCORE/ RVERT,RTOCH,RY,SKO,UPR,PLAV,TOT,ISCR,NKAD
+      COMMON /SCQAL/ QVERT,QTOCH,QOS,QGLIS,QUPR,QPLAV
       COMMON /OLDU/ UPREV(4),UPREV2(4),IFIRST
       DATA VY1/1.5/,VY2/2.5/,VY3/4.0/,DTLIM/3000./,YLIM/50./,
-     1GLIM/50./,OVLIM/20./,SMLIM/4./,WVERT/0.30/,WTOCH/0.15/,
-     2WGLIS/0.25/,WUPR/0.15/,WPLAV/0.15/,PLIM/0.60/
+     1GLIM/50./,OVLIM/20./,SMLIM/4./,WVERT/0.28/,WTOCH/0.14/,
+     2WY/0.05/,WGLIS/0.24/,WUPR/0.14/,WPLAV/0.15/,PLIM/0.60/
+      DATA QVERT/0./,QTOCH/0./,QOS/0./,QGLIS/0./,QUPR/0./,QPLAV/0./
       DATA RVERT/0./,RTOCH/0./,RY/0./,SKO/0./,UPR/0./,PLAV/0./,
      1TOT/0./,ISCR/0/,NKAD/0/,IFIRST/0/
       END
       SUBROUTINE SCCLR
       COMMON /SCORE/ RVERT,RTOCH,RY,SKO,UPR,PLAV,TOT,ISCR,NKAD
+      COMMON /SCQAL/ QVERT,QTOCH,QOS,QGLIS,QUPR,QPLAV
       COMMON /OLDU/ UPREV(4),UPREV2(4),IFIRST
+      QVERT=0.
+      QTOCH=0.
+      QOS=0.
+      QGLIS=0.
+      QUPR=0.
+      QPLAV=0.
       RVERT=0.
       RTOCH=0.
       RY=0.
@@ -62,8 +72,9 @@ C==============================================================
       SUBROUTINE SCCALC(X)
       DIMENSION X(13)
       COMMON /SCPAR/ VY1,VY2,VY3,DTLIM,YLIM,GLIM,OVLIM,SMLIM,
-     1WVERT,WTOCH,WGLIS,WUPR,WPLAV,PLIM
+     1WVERT,WTOCH,WY,WGLIS,WUPR,WPLAV,PLIM
       COMMON /SCORE/ RVERT,RTOCH,RY,SKO,UPR,PLAV,TOT,ISCR,NKAD
+      COMMON /SCQAL/ QVERT,QTOCH,QOS,QGLIS,QUPR,QPLAV
       COMMON /SCHET/ SUME,NEGL
       RVERT=ABS(X(2))
       RTOCH=X(11)
@@ -84,7 +95,13 @@ C==============================================================
       IF(QG.LT.0.) QG=0.
       IF(QO.LT.0.) QO=0.
       IF(QM.LT.0.) QM=0.
-      TOT=WVERT*QV+WTOCH*QT+WGLIS*QG+WUPR*QO+WPLAV*QM
+      QVERT=QV
+      QTOCH=QT
+      QOS=QY
+      QGLIS=QG
+      QUPR=QO
+      QPLAV=QM
+      TOT=WVERT*QV+WTOCH*QT+WY*QY+WGLIS*QG+WUPR*QO+WPLAV*QM
       ISCR=0
       IF(TOT.GE.PLIM .AND. RVERT.LE.VY3) ISCR=1
       END
@@ -99,13 +116,23 @@ C==============================================================
       TT=TOT
       IS=ISCR
       END
-      SUBROUTINE SCWPAR(WV,WT,WG,WU,WP,PL)
+      SUBROUTINE SCWPAR(WV,WT,WYO,WG,WU,WP,PL)
       COMMON /SCPAR/ VY1,VY2,VY3,DTLIM,YLIM,GLIM,OVLIM,SMLIM,
-     1WVERT,WTOCH,WGLIS,WUPR,WPLAV,PLIM
+     1WVERT,WTOCH,WY,WGLIS,WUPR,WPLAV,PLIM
       WV=WVERT
       WT=WTOCH
+      WYO=WY
       WG=WGLIS
       WU=WUPR
       WP=WPLAV
       PL=PLIM
+      END
+      SUBROUTINE SCQGET(V1,V2,V3,V4,V5,V6)
+      COMMON /SCQAL/ QVERT,QTOCH,QOS,QGLIS,QUPR,QPLAV
+      V1=QVERT
+      V2=QTOCH
+      V3=QOS
+      V4=QGLIS
+      V5=QUPR
+      V6=QPLAV
       END

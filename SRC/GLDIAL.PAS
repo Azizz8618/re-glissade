@@ -22,7 +22,8 @@ var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     RECON:boolean; NFRMX,NEVMX,NSTEP,IEVK:integer;
     RX:VEC13; RU:VEC4; RT:real;
     SCVERT,SCTOCH,SCY,SCSKO,SCUPR,SCPLAV,SCTOT:real; SCZACH:integer;
-    SCW1,SCW2,SCW3,SCW4,SCW5,SCW6:real;
+    SCW1,SCW2,SCW3,SCW4,SCW5,SCW6,SCW7:real;
+    SCQ1,SCQ2,SCQ3,SCQ4,SCQ5,SCQ6:real;
     EXKTIP:array[1..5] of integer;
     EXSIGW,EXRSEED,EXDT0,EXTMAX:array[1..5] of real;
     pastel: array[0..25] of Bitset;
@@ -52,7 +53,8 @@ procedure SCCLR; fortran;
 procedure SCPUT(var U:VEC4); fortran;
 procedure SCCALC(var X:VEC13); fortran;
 procedure SCGET(var RV,RT,RY,SS,UP,PP,TT:real; var IS:integer); fortran;
-procedure SCWPAR(var WV,WT,WG,WU,WP,PL:real); fortran;
+procedure SCWPAR(var WV,WT,WY,WG,WU,WP,PL:real); fortran;
+procedure SCQGET(var V1,V2,V3,V4,V5,V6:real); fortran;
 procedure PRVIN; fortran;
 procedure JUDG(var X:VEC13); fortran;
 (* аксессоры GLACC *)
@@ -241,17 +243,30 @@ begin
           ' ATAKA=',ALF:5:1,' TYAG=',100*U[4]:3:0)
 end;
 (************************************************************)
+procedure SCRROW(NM:alfa; V,Q,W:real);
+begin
+  write(NM,V:10:2,Q:8:2,W:6:2,' ');
+  if Q>=0.9 then begin writeln('ОТЛ'); exit end;
+  if Q>=0.7 then begin writeln('ХОР'); exit end;
+  if Q>=0.4 then begin writeln('УДВ'); exit end;
+  writeln('НЕУД')
+end;
+(************************************************************)
 procedure PRTSCR;
 begin
   SCGET(SCVERT,SCTOCH,SCY,SCSKO,SCUPR,SCPLAV,SCTOT,SCZACH);
-  SCWPAR(SCW1,SCW2,SCW3,SCW4,SCW5,SCW6);
-  writeln('ОЦЕНКА ЗАДАНИЯ=',SCTOT:7:3,' ЗАЧЕТ=',SCZACH:1);
-  writeln(' ВЕРТ=',SCVERT:7:2,' ТОЧКА=',SCTOCH:7:0,
-          ' ОТ ОСИ=',SCY:7:1);
-  writeln(' СКО=',SCSKO:7:2,' ПЕРЕУПРАВЛЕНИЕ=',SCUPR:8:3);
-  writeln(' НЕПЛАВНОСТЬ=',SCPLAV:8:3);
-  writeln(' ВЕСА=',SCW1:5:2,SCW2:5:2,SCW3:5:2,SCW4:5:2,SCW5:5:2,
-          ' ПОРОГ=',SCW6:5:2)
+  SCWPAR(SCW1,SCW2,SCW3,SCW4,SCW5,SCW6,SCW7);
+  SCQGET(SCQ1,SCQ2,SCQ3,SCQ4,SCQ5,SCQ6);
+  writeln('ДЕБРИФИНГ ЗАДАНИЯ');
+  writeln('КОМПОНЕНТ   ЗНАЧЕНИЕ КАЧЕСТВО ВЕС СТАТУС');
+  SCRROW('ВЕРТ  ',SCVERT,SCQ1,SCW1);
+  SCRROW('ТОЧКА ',SCTOCH,SCQ2,SCW2);
+  SCRROW('ОТ ОСИ',SCY,SCQ3,SCW3);
+  SCRROW('СКО   ',SCSKO,SCQ4,SCW4);
+  SCRROW('ПЕРЕУП',SCUPR,SCQ5,SCW5);
+  SCRROW('НЕПЛАВ',SCPLAV,SCQ6,SCW6);
+  writeln('ИТОГО БАЛЛ=',SCTOT:7:3,' ПОРОГ=',SCW7:5:2,
+          ' ЗАЧЕТ=',SCZACH:1)
 end;
 (************************************************************)
 procedure PLYREC;

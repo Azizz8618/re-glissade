@@ -111,7 +111,7 @@ def run_game(ex, timeout=240, score=False):
         m = re.findall(pattern, text)
         return float(m[-1]) if m else None
 
-    sm = re.search(r'Д..ИЯ=\s*([-\d.E+]+)', text)
+    sm = re.search(r'Б.ЛЛ=\s*([-\d.E+]+)', text)
     zm = re.search(r'Ч.T=\s*(\d)', text)
     vert = last(r'VERT=\s*([-\d.E+]+)')
     oce = last(r'OCENKA=\s*(\d+)')
