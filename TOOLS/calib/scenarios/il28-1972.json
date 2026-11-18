@@ -1,0 +1,24 @@
+{
+ "id": "il28-1972",
+ "name": "Ил-28 по наглядному пособию 1972",
+ "source": "Наглядное пособие 1972",
+ "aircraft": 2,
+ "weather": {
+  "sigw": 0.5,
+  "rseed": 7351.5,
+  "dt0": 0.6
+ },
+ "limits": {
+  "tmax": 2400
+ },
+ "tolerance": {
+  "vert": 0.05,
+  "daln": 50.0
+ },
+ "expected": {
+  "vert": -1.04,
+  "ocenka": 1,
+  "daln": -4000.0,
+  "t": null
+ }
+}

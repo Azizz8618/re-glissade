@@ -1,0 +1,24 @@
+{
+ "id": "tu104-rle",
+ "name": "Ту-104 по РЛЭ",
+ "source": "РЛЭ Ту-104, стр. 58-59",
+ "aircraft": 3,
+ "weather": {
+  "sigw": 0.3,
+  "rseed": 7351.5,
+  "dt0": 0.6
+ },
+ "limits": {
+  "tmax": 2400
+ },
+ "tolerance": {
+  "vert": 0.05,
+  "daln": 50.0
+ },
+ "expected": {
+  "vert": -1.17,
+  "ocenka": 1,
+  "daln": -1600.0,
+  "t": null
+ }
+}

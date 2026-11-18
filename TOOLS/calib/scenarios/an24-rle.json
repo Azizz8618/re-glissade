@@ -1,0 +1,24 @@
+{
+ "id": "an24-rle",
+ "name": "Ан-24 по РЛЭ",
+ "source": "РЛЭ Ан-24, 345 стр.",
+ "aircraft": 4,
+ "weather": {
+  "sigw": 1.5,
+  "rseed": 7351.0,
+  "dt0": 0.6
+ },
+ "limits": {
+  "tmax": 2400
+ },
+ "tolerance": {
+  "vert": 0.05,
+  "daln": 50.0
+ },
+ "expected": {
+  "vert": -2.41,
+  "ocenka": 2,
+  "daln": 3300.0,
+  "t": -2.41
+ }
+}

@@ -4,5 +4,6 @@ TOOLS/calib/work*/
 TOOLS/calib/search-L*/
 TOOLS/calib/searchwork*/
 TOOLS/calib/tunework*/
+TOOLS/calib/*.log
 RUNS/run-2026-11-12/TEST-READ-*.err
 RUNS/run-2026-11-12/TEST-READ-*.log

@@ -1,0 +1,24 @@
+{
+ "id": "an2-rle",
+ "name": "Ан-2 по РЛЭ и Радченко",
+ "source": "РЛЭ Ан-2, Радченко",
+ "aircraft": 5,
+ "weather": {
+  "sigw": 0.3,
+  "rseed": 7351.5,
+  "dt0": 0.6
+ },
+ "limits": {
+  "tmax": 2400
+ },
+ "tolerance": {
+  "vert": 0.05,
+  "daln": 50.0
+ },
+ "expected": {
+  "vert": -0.763,
+  "ocenka": 1,
+  "daln": -660.0,
+  "t": null
+ }
+}

@@ -18,6 +18,7 @@
 | `search_level.py` | поиск по одному уровню `CALIB_SIG` |
 | `write_glgain.py` | генерация `SRC/GLGAIN.FTN` из `best.json` и `levels/` |
 | `verify_all.py` | проверка всех типов в самой игре: `verify_all.py <SIGW>` |
+| `scenarios.py` | исторические сценарии: `list/add/run/capture/verify/report` |
 
 ## Параметры GLAUTO
 
@@ -54,6 +55,23 @@ python3 search.py 30                 # 30 итераций случайного 
 `/usr/local/share/besm6`; остальные тома подключаются симлинками.
 Dispак запускается через `run_save_pty.py` из besm-crypto — `WHAT=`
 отвечается переводом строки.
+
+## Исторические сценарии
+
+Сценарии хранятся в `scenarios/*.json`: тип самолёта, `SIGW`, `RSEED`,
+`DT0`, источник и ожидаемые метрики. Добавить и зафиксировать:
+
+```bash
+python3 scenarios.py add my-case --aircraft 3 --sigw 0.3 \
+    --rseed 7351.5 --source "РЛЭ Ту-104"
+python3 scenarios.py capture my-case
+python3 scenarios.py verify
+python3 scenarios.py report
+```
+
+`capture` записывает измеренные VERT/OCENKA/DALN как ожидаемые;
+`verify` сверяет с допуском `tolerance` из JSON (по умолчанию 0.05 м/с
+и 50 м). Прогон идёт в реальной игре из PERSO зоны 2700.
 
 **Важно:** 18.11.2026 в `CALIB*.PAS` добавлена нормализация кватерниона
 после РК-4 (как в `GLMAIN` и `GLDIAL`) — без неё калибратор расходился

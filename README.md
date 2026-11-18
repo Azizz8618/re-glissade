@@ -182,6 +182,7 @@ v0.2: скелет пакета и первый прогон в среде (эт
 - `docs/analysis/ttx-audit.md` — сверка ТТХ с документами и порядок правки блока `GLTTX`;
 - `docs/analysis/hardcoded-audit.md` — аудит жёстко зашитых параметров;
 - `docs/analysis/etalon-pogoda.md` — эталонные посадки по типам и погоде;
+- `docs/analysis/etalon-scenarios.md` — исторические сценарии посадок;
 - `docs/PLAN-AN2.md`, `docs/analysis/ttx-ispravlenie.md` — внедрение Ан-2 и исправление ТТХ.
 
 Известные ограничения: используются временные приспособления симулятора

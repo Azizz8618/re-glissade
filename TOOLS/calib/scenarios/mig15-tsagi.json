@@ -1,0 +1,24 @@
+{
+ "id": "mig15-tsagi",
+ "name": "МиГ-15 по книге ЦАГИ 1953",
+ "source": "Согалов, ЦАГИ 1953",
+ "aircraft": 1,
+ "weather": {
+  "sigw": 0.0,
+  "rseed": 7351.5,
+  "dt0": 0.6
+ },
+ "limits": {
+  "tmax": 2400
+ },
+ "tolerance": {
+  "vert": 0.05,
+  "daln": 50.0
+ },
+ "expected": {
+  "vert": -1.2,
+  "ocenka": 1,
+  "daln": -1500.0,
+  "t": null
+ }
+}
