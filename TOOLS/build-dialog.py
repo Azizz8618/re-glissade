@@ -129,9 +129,49 @@ eeв1а3
 '''
     (WORK / 'GLDIAL.b6').write_text(dlg, encoding='utf-8')
 
+    # 4. Колода записи Pascal в ту же PERSO-зону (без runtime в каталоге)
+    perso_dlg = f'''шифр 419999 зс5^
+лен {LU}(2348-wr)^
+ОЗУ 32^
+АЦПУ 140^
+ТРА 37^
+ТЕЛЕ^
+eeв1а3
+*name GLDIAL
+*call yesmemory
+*perso:{PERSOCARD}
+*call *pascal
+{dia}*to perso:{PERSOCARD}
+*end file
+``````
+еконец
+'''
+    (WORK / 'GLDIAL-PERSO.b6').write_text(perso_dlg, encoding='utf-8')
+
+    # 5. Колода вызова диалога из PERSO по имени
+    call = f'''шифр 419999 зс5^
+лен {LU}(2348)^
+ОЗУ 32^
+АЦПУ 140^
+ТРА 37^
+ТЕЛЕ^
+eeв1а3
+*name CALLGL
+*call yesmemory
+*perso:{PERSOCARD}
+*perso:402570,cont
+*no list
+*call gldial
+*end file
+``````
+еконец
+'''
+    (WORK / 'CALLGL.b6').write_text(call, encoding='utf-8')
+
     print(f'Каталог сборки: {WORK}')
     print(f'PERSO-зона: {ZONE}(8), карта *perso:{PERSOCARD}')
-    print('Колоды: GLKERN.b6 (ядро в PERSO), GLDIAL.b6 (диалог)')
+    print('Колоды: GLKERN.b6 (ядро), GLDIAL-PERSO.b6 (Pascal в PERSO),')
+    print('        CALLGL.b6 (вызов), GLDIAL.b6 (компиляция+execute)')
     print('Дальше: см. docs/PLAN-DIALOG.md, раздел 9.')
 
 

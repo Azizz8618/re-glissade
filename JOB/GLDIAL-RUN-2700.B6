@@ -1,0 +1,265 @@
+шифр 419999 зс5^
+лен 40(2348)^
+ОЗУ 32^
+АЦПУ 140^
+ТРА 37^
+ТЕЛЕ^
+eeв1а3
+*name GLDIAL
+*call yesmemory
+*perso:402700
+*perso:402570,cont
+*stand
+*call *pascal
+PROGRAM GLDIAL(INPUT,OUTPUT);(*=S7,L3,U+*)
+(************************************************************)
+(* ГЛИССАДА-6. ТЕКСТОВЫЙ ДИАЛОГ. ПЕЧАТЬ - ПАСКАЛЬ.             *)
+(* ЯДРО - ФОРТРАН: GLINITD, GLPROIZ, GLAUTO, GLNUMR, GLOUT.   *)
+(************************************************************)
+CONST H=0.1; RAD=57.2958; NL=41;
+TYPE VEC13=ARRAY[1..13] OF REAL;
+     VEC4=ARRAY[1..4] OF REAL;
+     ARG=RECORD
+       BUFLEN,INPLEN,DUMMY1,DUMMY2:INTEGER;
+       A:PACKED ARRAY[1..140] OF CHAR
+     END;
+VAR X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
+    U:VEC4; B:ARG; CMD:ALFA;
+    T,TMAX,RSEED,SIGW,DT0,DTSH,TAU,SUME,EGLI,DTM,ZERO,AVY:REAL;
+    QN,VA,ALF,TH,GA,PS,VTHR,VHCR:REAL;
+    KTIP,MODE,ICTRL,NFR,IFLIB,NPRN,NMAX,NSTP,NEGL,IPOS:INTEGER;
+    I,J,IH,JA,JG,IB,K,OCE:INTEGER; OK,RUN,PAUS:BOOLEAN;
+(* ДИАЛОГ *)
+PROCEDURE PASRED(VAR D:ARG); EXTERNAL;
+(* ЯДРО *)
+PROCEDURE INITD(VAR K:INTEGER); FORTRAN;
+PROCEDURE PROIZV(VAR X:VEC13; VAR U:VEC4; VAR XD:VEC13); FORTRAN;
+PROCEDURE GLAUTO(VAR X:VEC13; VAR U:VEC4); FORTRAN;
+PROCEDURE PROGC(VAR T:REAL; VAR U:VEC4); FORTRAN;
+PROCEDURE TURB; FORTRAN;
+PROCEDURE PRVIN; FORTRAN;
+PROCEDURE JUDG(VAR X:VEC13); FORTRAN;
+(* АКСЕССОРЫ GLACC *)
+PROCEDURE GLSET(VAR T,DT:REAL; VAR K,M,IC,NR,IFL:INTEGER;
+           VAR TM:REAL); FORTRAN;
+PROCEDURE GLT(VAR T:REAL); FORTRAN;
+PROCEDURE GLSOST(VAR VTH,HCR:REAL); FORTRAN;
+PROCEDURE GLSEED(VAR RS:REAL); FORTRAN;
+PROCEDURE GLBUR(VAR SIG,TAU,WX,WY,WZ:REAL); FORTRAN;
+PROCEDURE GLSC(VAR SU:REAL; VAR NE:INTEGER); FORTRAN;
+PROCEDURE GLVOD(VAR VA,ALF:REAL); FORTRAN;
+PROCEDURE GLANG(VAR X:VEC13; VAR TH,GA,PS,DTM,EG:REAL;
+           VAR IP:INTEGER); FORTRAN;
+(************************************************************)
+PROCEDURE GTINT(VAR N:INTEGER; VAR OK:BOOLEAN);
+VAR P:INTEGER; C:CHAR;
+BEGIN
+  OK:=TRUE; N:=0; P:=1;
+  WHILE (P<=B.INPLEN) AND (B.A[P]=' ') DO P:=P+1;
+  IF P>B.INPLEN THEN BEGIN OK:=FALSE; EXIT END;
+  WHILE P<=B.INPLEN DO
+  BEGIN
+    C:=B.A[P];
+    IF (C<'0') OR (C>'9') THEN BEGIN OK:=FALSE; EXIT END;
+    N:=N*10+ORD(C)-48; P:=P+1
+  END
+END;
+(************************************************************)
+PROCEDURE GTRL(VAR R:REAL; VAR OK:BOOLEAN);
+VAR P,S:INTEGER; F:REAL; C:CHAR;
+BEGIN
+  OK:=TRUE; P:=1;
+  WHILE (P<=B.INPLEN) AND (B.A[P]=' ') DO P:=P+1;
+  S:=1;
+  IF P<=B.INPLEN THEN
+    IF B.A[P]='-' THEN BEGIN S:=-1; P:=P+1 END
+    ELSE IF B.A[P]='+' THEN P:=P+1;
+  R:=0; F:=1;
+  WHILE P<=B.INPLEN DO
+  BEGIN
+    C:=B.A[P];
+    IF C='.' THEN
+    BEGIN
+      P:=P+1;
+      WHILE P<=B.INPLEN DO
+      BEGIN
+        C:=B.A[P];
+        IF (C<'0') OR (C>'9') THEN BEGIN OK:=FALSE; EXIT END;
+        R:=R*10+ORD(C)-48; F:=F*10; P:=P+1
+      END
+    END
+    ELSE
+    BEGIN
+      IF (C<'0') OR (C>'9') THEN BEGIN OK:=FALSE; EXIT END;
+      R:=R*10+ORD(C)-48; P:=P+1
+    END
+  END;
+  R:=S*R/F
+END;
+(************************************************************)
+PROCEDURE GTALF(VAR A:ALFA);
+VAR P:INTEGER;
+BEGIN
+  FOR P:=1 TO 6 DO
+    IF P<=B.INPLEN THEN A[P]:=B.A[P] ELSE A[P]:=' '
+END;
+(************************************************************)
+PROCEDURE ASK;
+BEGIN
+  WRITELN;
+  WRITE('> ');
+  B.BUFLEN:=80; B.INPLEN:=0;
+  PASRED(B)
+END;
+(************************************************************)
+PROCEDURE PARAMS;
+BEGIN
+  WRITELN('GLISSADA-6 / TEKSTOVY DIALOG');
+  WRITELN('TIP 1..5 :'); ASK; GTINT(KTIP,OK);
+  WRITELN('MODE 1 AVTO / 2 PROG :'); ASK; GTINT(MODE,OK);
+  WRITELN('ICTRL 0 BATCH / 1 TERM :'); ASK; GTINT(ICTRL,OK);
+  WRITELN('NFR SEK :'); ASK; GTINT(NFR,OK);
+  WRITELN('IFLIB 0/1 :'); ASK; GTINT(IFLIB,OK);
+  WRITELN('TMAX :'); ASK; GTRL(TMAX,OK);
+  WRITELN('RSEED :'); ASK; GTRL(RSEED,OK);
+  WRITELN('SIGW :'); ASK; GTRL(SIGW,OK);
+  WRITELN('DT0 :'); ASK; GTRL(DT0,OK)
+END;
+(************************************************************)
+PROCEDURE INIT;
+BEGIN
+  DTSH:=H; TAU:=1.0; ZERO:=0.0;
+  GLSET(ZERO,DTSH,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX);
+  GLSEED(RSEED);
+  GLBUR(SIGW,TAU,ZERO,ZERO,ZERO);
+  INITD(KTIP);
+  GLSOST(VTHR,VHCR);
+  X[1]:=VTHR; X[2]:=0.0; X[3]:=0.0;
+  X[4]:=1.0; X[5]:=0.0; X[6]:=0.0; X[7]:=0.0;
+  X[8]:=0.0; X[9]:=0.0; X[10]:=0.0;
+  X[11]:=-15000.0; X[12]:=0.0; X[13]:=15000.0*0.05241;
+  T:=0.0;
+  FOR I:=1 TO 3 DO U[I]:=0.0;
+  U[4]:=DT0;
+  SUME:=0.0; NEGL:=0; NSTP:=0;
+  IF MODE=2 THEN PRVIN;
+  NPRN:=TRUNC(NFR/DTSH); IF NPRN<1 THEN NPRN:=999999;
+  NMAX:=TRUNC(TMAX/DTSH)
+END;
+(************************************************************)
+PROCEDURE DOSTP;
+VAR I:INTEGER;
+BEGIN
+  T:=T+DTSH;
+  GLSET(T,DTSH,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX);
+  IF MODE=1 THEN GLAUTO(X,U) ELSE PROGC(T,U);
+  TURB;
+  PROIZV(X,U,VK1);
+  FOR I:=1 TO 13 DO VX1[I]:=X[I]+0.5*DTSH*VK1[I];
+  PROIZV(VX1,U,VK2);
+  FOR I:=1 TO 13 DO VX2[I]:=X[I]+0.5*DTSH*VK2[I];
+  PROIZV(VX2,U,VK3);
+  FOR I:=1 TO 13 DO VX3[I]:=X[I]+DTSH*VK3[I];
+  PROIZV(VX3,U,VK4);
+  FOR I:=1 TO 13 DO
+    X[I]:=X[I]+DTSH*(VK1[I]+2*VK2[I]+2*VK3[I]+VK4[I])/6.0;
+  QN:=SQRT(X[4]*X[4]+X[5]*X[5]+X[6]*X[6]+X[7]*X[7]);
+  X[4]:=X[4]/QN; X[5]:=X[5]/QN; X[6]:=X[6]/QN; X[7]:=X[7]/QN;
+  EGLI:=X[13]+0.05241*X[11];
+  SUME:=SUME+EGLI*EGLI; NEGL:=NEGL+1;
+  NSTP:=NSTP+1
+END;
+(************************************************************)
+PROCEDURE PRFRM;
+VAR I,J,IH,JA,IB:INTEGER; HGL:REAL;
+BEGIN
+  GLANG(X,TH,GA,PS,DTM,EGLI,IPOS);
+  GLVOD(VA,ALF);
+  IB:=21+TRUNC(X[12]/5.0);
+  IF IB<1 THEN IB:=1;
+  IF IB>41 THEN IB:=41;
+  WRITELN;
+  WRITELN('T=',T:7:1,' TIP=',KTIP:1,' DALN=',DTM:7:0,
+          ' VYS=',X[13]:7:1,' Y=',X[12]:7:1);
+  WRITELN(' VYS PROFILE             | PLAN SVERHU');
+  JA:=31-TRUNC(DTM/500.0);
+  FOR IH:=8 DOWNTO 0 DO
+  BEGIN
+    WRITE(' ',IH*100:4,' |');
+    FOR J:=1 TO 30 DO
+    BEGIN
+      HGL:=0.05241*(31-J)*500.0;
+      IF (IH=TRUNC(X[13]/100.0)) AND (J=JA) THEN WRITE('*')
+      ELSE IF TRUNC(HGL/100.0)=IH THEN WRITE('.')
+      ELSE IF IH=0 THEN WRITE('=')
+      ELSE WRITE(' ')
+    END;
+    WRITE(' |');
+    IF IH=8 THEN
+    BEGIN
+      WRITE('    |====|');
+      FOR J:=1 TO IB DO WRITE(' ');
+      WRITE('*'); WRITELN
+    END
+    ELSE IF IH=0 THEN WRITELN('    |====|')
+    ELSE WRITELN('    |    |')
+  END;
+  WRITELN('     15KM  10KM  5KM  0');
+  WRITELN(' GLISS 3 GR |----*----| EGLI=',EGLI:7:1,' M');
+  WRITELN(' KURS LUCH |----*----| Y=',X[12]:7:1,' M');
+  WRITELN(' SKOR=',VA:6:1,' VERT=',X[2]:6:2,
+          ' ATAKA=',ALF:5:1,' TYAG=',100*U[4]:3:0)
+END;
+(************************************************************)
+PROCEDURE CMDLOOP(VAR CMD:ALFA);
+BEGIN
+  WRITELN('CMD: STA/STE/STO/PAR/PRN/EXIT');
+  ASK; GTALF(CMD)
+END;
+(************************************************************)
+BEGIN
+  PARAMS;
+  INIT;
+  PAUS:=TRUE; RUN:=FALSE;
+  REPEAT
+    IF PAUS THEN
+    BEGIN
+      CMDLOOP(CMD);
+      SELECT
+        CMD='STA   ': BEGIN RUN:=TRUE; PAUS:=FALSE END;
+        CMD='STE   ': BEGIN DOSTP; PRFRM; PAUS:=TRUE END;
+        CMD='STO   ': BEGIN RUN:=FALSE; PAUS:=TRUE END;
+        CMD='PAR   ': BEGIN PARAMS; INIT; PAUS:=TRUE END;
+        CMD='PRN   ': PRFRM;
+        CMD='EXIT  ': BEGIN WRITELN('EXIT'); STOP END;
+        TRUE: WRITELN('NEPR. KOMANDA')
+      END
+    END;
+    IF RUN THEN
+    BEGIN
+      DOSTP;
+      IF (NSTP MOD NPRN)=0 THEN PRFRM;
+      IF X[13]<=VHCR THEN
+      BEGIN
+        PRFRM; GLSC(SUME,NEGL); JUDG(X);
+        AVY:=ABS(X[2]); OCE:=4;
+        IF AVY<=4.0 THEN OCE:=3;
+        IF AVY<=2.5 THEN OCE:=2;
+        IF AVY<=1.5 THEN OCE:=1;
+        WRITELN('OCENKA= ',OCE:1);
+        RUN:=FALSE; PAUS:=TRUE
+      END;
+      IF X[13] < -100.0 THEN
+      BEGIN WRITELN('AVARIA: RAZRUSHENIE'); RUN:=FALSE; PAUS:=TRUE END;
+      IF NSTP>=NMAX THEN
+      BEGIN WRITELN('LIMIT VREMENI: T=',T:7:0);
+            RUN:=FALSE; PAUS:=TRUE END;
+      IF (NOT PAUS) AND (NSTP MOD NPRN=0) AND (ICTRL=1)
+      THEN CMDLOOP(CMD)
+    END
+  UNTIL FALSE
+END.
+*execute
+*end file
+``````
+еконец
