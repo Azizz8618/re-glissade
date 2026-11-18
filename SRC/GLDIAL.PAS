@@ -15,6 +15,7 @@ var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     U:VEC4; B:ARG; CMD:alfa;
     T,TMAX,RSEED,SIGW,DT0,DTSH,TAU,SUME,EGLI,DTM,ZERO,AVY:real;
     QN,VA,ALF,TH,GA,PS,VTHR,VHCR,ERMAX,ERR:real;
+    EPSKM,HNEW,KMHMIN,KMHMAX,KMSF,KMEXP:real; KMTRY:integer;
     KTIP,MODE,ICTRL,NFR,IFLIB,NPRN,NMAX,NSTP,NEGL,IPOS:integer;
     I,J,IH,JA,JG,IB,K,OCE:integer; OK,RUN,PAUS:boolean;
     IMODE,IEX,IFLT:integer;
@@ -36,6 +37,12 @@ procedure GLAUTO(var X:VEC13; var U:VEC4); fortran;
 procedure PROGC(var T:real; var U:VEC4); fortran;
 procedure TURB; fortran;
 procedure KUTMER(var X:VEC13; var U:VEC4; var DT,ERR:real); fortran;
+procedure KUTMAD(var X:VEC13; var U:VEC4; var DT,EPS:real;
+           var HNEW,ERR:real; var IFAIL:integer); fortran;
+procedure KMRK4(var X:VEC13; var U:VEC4; var H:real); fortran;
+procedure KMPAR(var EPS,HMN,HMX,SF:real;
+           var NT:integer; var EX:real); fortran;
+procedure KMSET(var EPS:real); fortran;
 procedure GLFINJ(var K:integer; var U:VEC4); fortran;
 procedure GLFCLR; fortran;
 (* регистратор: параметры в /RECPAR/ *)
@@ -146,6 +153,7 @@ end;
 (************************************************************)
 procedure INIT;
 begin
+  KMPAR(EPSKM,KMHMIN,KMHMAX,KMSF,KMTRY,KMEXP);
   GLFCLR;
   RECCLR; SCCLR;
   MANUAL:=false; DE:=0.0; DA:=0.0; DR:=0.0; DTZ:=DT0;
@@ -169,10 +177,13 @@ begin
 end;
 (************************************************************)
 procedure DOSTP;
-var I:integer;
+var I,IFAIL:integer;
 begin
-  T:=T+DTSH;
-  GLSET(T,DTSH,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX);
+  if ICTRL<>3 then
+  begin
+    T:=T+DTSH;
+    GLSET(T,DTSH,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX)
+  end;
   if MANUAL then
   begin
     U[1]:=DE; U[2]:=DA; U[3]:=DR; U[4]:=DTZ
@@ -180,20 +191,32 @@ begin
   else if MODE=1 then GLAUTO(X,U) else PROGC(T,U);
   SCPUT(U);
   TURB;
-  if ICTRL>=2 then
+  if ICTRL=3 then
   begin
-    KUTMER(X,U,DTSH,ERR);
-    if ERR>ERMAX then ERMAX:=ERR
+    KUTMAD(X,U,DTSH,EPSKM,HNEW,ERR,IFAIL);
+    DTSH:=HNEW;
+    if ERR>ERMAX then ERMAX:=ERR;
+    T:=T+DTSH;
+    GLSET(T,DTSH,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX);
+    KMRK4(X,U,DTSH)
+  end
+  else
+  begin
+    if ICTRL>=2 then
+    begin
+      KUTMER(X,U,DTSH,ERR);
+      if ERR>ERMAX then ERMAX:=ERR
+    end;
+    PROIZV(X,U,VK1);
+    for I:=1 to 13 do VX1[I]:=X[I]+0.5*DTSH*VK1[I];
+    PROIZV(VX1,U,VK2);
+    for I:=1 to 13 do VX2[I]:=X[I]+0.5*DTSH*VK2[I];
+    PROIZV(VX2,U,VK3);
+    for I:=1 to 13 do VX3[I]:=X[I]+DTSH*VK3[I];
+    PROIZV(VX3,U,VK4);
+    for I:=1 to 13 do
+      X[I]:=X[I]+DTSH*(VK1[I]+2*VK2[I]+2*VK3[I]+VK4[I])/6.0
   end;
-  PROIZV(X,U,VK1);
-  for I:=1 to 13 do VX1[I]:=X[I]+0.5*DTSH*VK1[I];
-  PROIZV(VX1,U,VK2);
-  for I:=1 to 13 do VX2[I]:=X[I]+0.5*DTSH*VK2[I];
-  PROIZV(VX2,U,VK3);
-  for I:=1 to 13 do VX3[I]:=X[I]+DTSH*VK3[I];
-  PROIZV(VX3,U,VK4);
-  for I:=1 to 13 do
-    X[I]:=X[I]+DTSH*(VK1[I]+2*VK2[I]+2*VK3[I]+VK4[I])/6.0;
   QN:=sqrt(X[4]*X[4]+X[5]*X[5]+X[6]*X[6]+X[7]*X[7]);
   X[4]:=X[4]/QN; X[5]:=X[5]/QN; X[6]:=X[6]/QN; X[7]:=X[7]/QN;
   EGLI:=X[13]+0.05241*X[11];
@@ -300,7 +323,7 @@ begin
     writeln('MAN: EV+ EV- AI+ AI- RU+ RU- TH+ TH-')
   end
   else
-    writeln('INS: SEL/FRZ/UNF/INJ/REC/RPL/RST/SCR/HLP/PIL');
+    writeln('INS: SEL/FRZ/UNF/INJ/EPS/REC/RPL/RST/SCR/HLP/PIL');
   ASK; GTALF(CMD)
 end;
 (************************************************************)
@@ -341,9 +364,15 @@ begin
             writeln('EXERCISE=',IEX:1,' SELECTED')
           end else writeln('NO EXERCISE');
           PAUS:=true end;
+        CMD='EPS   ': begin ASK; GTRL(EPSKM,OK); KMSET(EPSKM);
+          writeln('EPS=',EPSKM:10:3) end;
         CMD='HLP   ': if IMODE=0 then
           writeln('PIL: STA STE STO PAR PRN AUTO INS EXIT')
-          else writeln('INS: SEL FRZ UNF INJ REC RPL RST SCR HLP PIL');
+          else
+          begin
+            writeln('INS: SEL FRZ UNF INJ EPS REC RPL');
+            writeln('     RST SCR HLP PIL')
+          end;
         CMD='AUTO  ': begin MANUAL:=false; writeln('AUTO PILOT') end;
         CMD='EV+   ': begin MANUAL:=true; DE:=DE+0.05;
           if DE>0.30 then DE:=0.30; writeln('DE=',DE:6:3) end;
@@ -392,6 +421,7 @@ begin
         writeln('OCENKA= ',OCE:1);
         if ICTRL>=2 then
           writeln('KONTROL ERMAX=',ERMAX:10:4);
+          if ICTRL=3 then writeln('DTSH=',DTSH:8:4);
         RUN:=false; PAUS:=true
       end;
       if X[13] < -100.0 then
@@ -400,6 +430,7 @@ begin
       begin writeln('LIMIT VREMENI: T=',T:7:0);
             if ICTRL>=2 then
           writeln('KONTROL ERMAX=',ERMAX:10:4);
+          if ICTRL=3 then writeln('DTSH=',DTSH:8:4);
             RUN:=false; PAUS:=true end;
       if (not PAUS) and (NSTP mod NPRN=0) and (ICTRL=1)
       then CMDLOOP(CMD)

@@ -421,6 +421,79 @@ C==============================================================
       V6=QPLAV
       END
 C==============================================================
+C     ГЛИССАДА-6. АДАПТИВНЫЙ ШАГ ПО КУТТА-МЕРСОНУ.
+C     РЕКОНСТРУКЦИЯ ПОДПРОГРАММЫ АД01 С ДИСКА 2248:
+C     KUTTAMERSON(N,X,Y,EPS,H,FCT,FIRST) - АВТОМАТИЧЕСКИЙ ВЫБОР ШАГА.
+C     ВСЕ КОРРЕКТИРУЕМЫЕ ПАРАМЕТРЫ - В БЛОКЕ /KMCTL/.
+C==============================================================
+      BLOCK DATA KMAINT
+      COMMON /KMCTL/ EPSKM,HMIN,HMAX,SAFETY,MAXTRY,EXPN
+      DATA EPSKM/1.0E-4/,HMIN/0.001/,HMAX/1.0/,SAFETY/0.9/,
+     1MAXTRY/5/,EXPN/0.2/
+      END
+      SUBROUTINE KMPAR(EPS,HMN,HMX,SF,NT,EX)
+      COMMON /KMCTL/ EPSKM,HMIN,HMAX,SAFETY,MAXTRY,EXPN
+      EPS=EPSKM
+      HMN=HMIN
+      HMX=HMAX
+      SF=SAFETY
+      NT=MAXTRY
+      EX=EXPN
+      END
+      SUBROUTINE KMSET(EPS)
+      COMMON /KMCTL/ EPSKM,HMIN,HMAX,SAFETY,MAXTRY,EXPN
+      EPSKM=EPS
+      END
+      SUBROUTINE KUTMAD(X,U,DT,EPS,HNEW,ERR,IFAIL)
+      DIMENSION X(13),U(4)
+      COMMON /KMCTL/ EPSKM,HMIN,HMAX,SAFETY,MAXTRY,EXPN
+      H=DT
+      ERR=0.0
+      IFAIL=0
+      DO 10 ITRY=1,MAXTRY
+      CALL KUTMER(X,U,H,E)
+      IF(E.LE.EPS) GO TO 20
+      IF(H.LE.HMIN) GO TO 30
+      R=EPS/E
+      IF(R.LT.1.0E-30) R=1.0E-30
+      H=H*SAFETY*R**EXPN
+      IF(H.LT.HMIN) H=HMIN
+   10 CONTINUE
+      GO TO 30
+   20 CONTINUE
+      R=EPS/E
+      IF(R.GT.4.0) R=4.0
+      HNEW=H*SAFETY*R**EXPN
+      IF(HNEW.GT.HMAX) HNEW=HMAX
+      IF(HNEW.LT.HMIN) HNEW=HMIN
+      ERR=E
+      RETURN
+   30 CONTINUE
+      HNEW=H
+      IF(HNEW.LT.HMIN) HNEW=HMIN
+      IF(HNEW.GT.HMAX) HNEW=HMAX
+      CALL KUTMER(X,U,HNEW,E)
+      ERR=E
+      IFAIL=1
+      END
+      SUBROUTINE KMRK4(X,U,H)
+      DIMENSION X(13),U(4)
+      DIMENSION K1(13),K2(13),K3(13),K4(13),XA(13)
+      CALL PROIZV(X,U,K1)
+      DO 10 I=1,13
+   10 XA(I)=X(I)+0.5*H*K1(I)
+      CALL PROIZV(XA,U,K2)
+      DO 20 I=1,13
+   20 XA(I)=X(I)+0.5*H*K2(I)
+      CALL PROIZV(XA,U,K3)
+      DO 30 I=1,13
+   30 XA(I)=X(I)+H*K3(I)
+      CALL PROIZV(XA,U,K4)
+      DO 40 I=1,13
+   40 X(I)=X(I)+H*(K1(I)+2.*K2(I)+2.*K3(I)+K4(I))/6.0
+      RETURN
+      END
+C==============================================================
 C     ГЛИССАДА-6. ИНИЦИАЛИЗАЦИЯ ТИПА САМОЛЕТА.
 C     ВСЕ ЧИСЛОВЫЕ ТТХ ВЫНЕСЕНЫ В SRC/GLTTX.FTN, БЛОК /TTXDAT/.
 C     ПРАВКИ ТТХ ДЕЛАТЬ ТАМ, ЗДЕСЬ ТОЛЬКО ПЕРЕНОС В /SOST/.
