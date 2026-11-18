@@ -324,7 +324,7 @@ sh TOOLS/install-2348.sh 1
 **Фактическое состояние после установки:**
 
 - `~/.besm6/2348`, md5 `8da10bb57879e36fb141002b1f96f60c`;
-- зона 2700(8) занимает 6 зон, каталог содержит 23 входа: `GLDIAL`,
+- зона 2700(8) занимает 6 зон, каталог содержит 24 входа: `GLDIAL`, `GLKM`,
   `PROGRAM`, блок `*ТТХDАТ*` и 20 Fortran-процедур (`INITD`, `PROIZV`,
   `MOTOR`, `GLAUTO`, `PROGC`, `PRVIN`, `SBATM`, `SBRND`, `TURB`, `FRAME`,
   `DISPL`, `JUDG`, `GLSET`, `GLT`, `GLSOST`, `GLBUR`, `GLSEED`, `GLSC`,
