@@ -17,6 +17,7 @@ var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     QN,VA,ALF,TH,GA,PS,VTHR,VHCR,ERMAX,ERR:real;
     KTIP,MODE,ICTRL,NFR,IFLIB,NPRN,NMAX,NSTP,NEGL,IPOS:integer;
     I,J,IH,JA,JG,IB,K,OCE:integer; OK,RUN,PAUS:boolean;
+    IMODE,IEX:integer;
     pastel: array[0..25] of Bitset;
 (* диалог *)
 procedure PASRED(var D:ARG); external;
@@ -208,12 +209,16 @@ end;
 (************************************************************)
 procedure CMDLOOP(var CMD:alfa);
 begin
-  writeln('CMD: STA/STE/STO/PAR/PRN/EXIT');
+  if IMODE=0 then
+    writeln('PIL: STA/STE/STO/PAR/PRN/AUTO/INS/EXIT')
+  else
+    writeln('INS: SEL/FRZ/UNF/INJ/REC/PLY/SCR/HLP/PIL');
   ASK; GTALF(CMD)
 end;
 (************************************************************)
 begin
   PASTEL[3]:=[48];
+  IMODE:=0; IEX:=1;
   PARAMS;
   INIT;
   PAUS:=true; RUN:=false;
@@ -222,6 +227,17 @@ begin
     begin
       CMDLOOP(CMD);
       select
+        CMD='PIL   ': begin IMODE:=0; PAUS:=true end;
+        CMD='INS   ': begin IMODE:=1; PAUS:=true end;
+        CMD='FRZ   ': begin writeln('FREEZE');
+          RUN:=false; PAUS:=true end;
+        CMD='UNF   ': begin writeln('UNFREEZE');
+          RUN:=true; PAUS:=false end;
+        CMD='SEL   ': begin ASK; GTINT(IEX,OK);
+          writeln('EXERCISE=',IEX:1,' SELECTED'); PAUS:=true end;
+        CMD='HLP   ': if IMODE=0 then
+          writeln('PIL: STA STE STO PAR PRN AUTO INS EXIT')
+          else writeln('INS: SEL FRZ UNF INJ REC PLY SCR HLP PIL');
         CMD='STA   ': begin RUN:=true; PAUS:=false end;
         CMD='STE   ': begin DOSTP; PRFRM; PAUS:=true end;
         CMD='STO   ': begin RUN:=false; PAUS:=true end;
