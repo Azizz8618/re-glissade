@@ -207,18 +207,22 @@ def cmd_verify(args):
 def cmd_report(args):
     lines = ['# ИСТОРИЧЕСКИЕ СЦЕНАРИИ ПОСАДКИ', '',
              'Сценарии описаны в `TOOLS/calib/scenarios/*.json` и',
-             'прогоняются в реальной игре: `python3 TOOLS/calib/scenarios.py verify`.', '',
+             'запускаются в реальной игре: `python3 TOOLS/calib/scenarios.py verify`.', '',
              'DALN — дальность до порога в момент касания; отрицательное',
              'значение означает касание за порогом. VERT — вертикальная скорость, м/с.', '',
-             '| ID | Самолёт | Источник | SIGW | RSEED | VERT | OCENKA | DALN |',
-             '|---|---|---|---|---|---|---|---|']
+             'Сценарии воспроизводят **условия захода** (погоду, тягу), а не',
+             'исход происшествия: в модели нет видимости, рельефа, бокового',
+             'уклонения и капотирования. Мягкая посадка в сценарии не означает',
+             'благополучного исхода в реальности.', '',
+             '| ID | Самолёт | Источник | URL | SIGW | VERT | OCENKA |',
+             '|---|---|---|---|---|---|---|']
     for f in sorted(SCEN.glob('*.json')):
         sc = json.loads(f.read_text(encoding='utf-8'))
         e = sc.get('expected') or {}
-        lines.append('| %s | %s | %s | %s | %s | %s | %s | %s |' % (
+        lines.append('| %s | %s | %s | %s | %s | %s | %s |' % (
             sc['id'], NAMES.get(sc['aircraft'], '?'), sc.get('source', ''),
-            sc['weather']['sigw'], sc['weather']['rseed'],
-            e.get('vert', '—'), e.get('ocenka', '—'), e.get('daln', '—')))
+            sc.get('url', '—'), sc['weather']['sigw'],
+            e.get('vert', '—'), e.get('ocenka', '—')))
     out = REPO / 'docs' / 'analysis' / 'etalon-scenarios.md'
     out.write_text('\n'.join(lines) + '\n', encoding='utf-8')
     print('записано', out)
