@@ -155,6 +155,7 @@ python3 TOOLS/replay.py verify            # побайтовый повтор
 
 - `docs/PLAN.md` — общий план и критерии готовности;
 - `docs/PLAN-TRENAZHER-K71.md` — план тренажёра по К-71 (этапы 0–13);
+- `docs/PLAN-PERIFERIYA.md` — план периферийных подсистем по образцу re-mrv;
 - `docs/STATE.md`, `docs/GAPS.md` — состояние и Gap-реестр;
 - `docs/ETAP0.TXT`, `docs/ETAP1.TXT` — журналы настройки среды;
 - `docs/PLAN-DIALOG.md`, `docs/DIALOG-FIELD.md` — диалог и словарь команд;
