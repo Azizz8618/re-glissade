@@ -30,7 +30,7 @@ ZONE = sys.argv[2] if len(sys.argv) > 2 else '2700'
 LU = '40'                     # логический номер устройства с томом 2348
 PERSOCARD = f'{LU}{ZONE}'      # например 402700 -> карта *perso:402700
 
-CORE = ['GLINITD', 'GLPROIZ', 'GLAUTO', 'GLNUMR', 'GLOUT', 'GLACC']
+CORE = ['GLTTX', 'GLINITD', 'GLPROIZ', 'GLAUTO', 'GLNUMR', 'GLOUT', 'GLACC']
 
 
 def gost(text: str) -> str:
@@ -45,8 +45,9 @@ def dialog_fortran(name: str) -> str:
     text = (SRC / f'{name}.FTN').read_text(encoding='utf-8')
     out: list[str] = []
     for line in text.split('\n'):
-        # Сохранить метку Computed GOTO: 'C  10 WRITE...' -> '  10 CONTINUE'
-        m = re.match(r'^C\s+(\d{2,5})\s+WRITE\(6', line)
+        # Сохранить метку оператора: '   10 WRITE...' -> '   10 CONTINUE'
+        # (иначе Computed GOTO в INITD/JUDG переходит в comment).
+        m = re.match(r'^[C ]?\s+(\d{2,5})\s+WRITE\(6', line)
         if m:
             out.append(f'  {m.group(1)} CONTINUE')
             continue
@@ -55,6 +56,21 @@ def dialog_fortran(name: str) -> str:
             continue
         out.append(line)
     text = '\n'.join(out)
+    # В INITD ветви GO TO (10..50),KTIP только печатают имя самолёта;
+    # в диалоге это делает Pascal. Метки на CONTINUE ФОРЭК запрещает,
+    # поэтому удаляем ветки целиком, оставляя RETURN.
+    if name == 'GLINITD':
+        lines = text.split('\n')
+        res, i = [], 0
+        while i < len(lines):
+            if lines[i].strip().startswith('GO TO (10,20,30,40,50),KTIP'):
+                while i < len(lines) and lines[i].strip() != 'END':
+                    i += 1
+                res.append('      RETURN')
+                continue
+            res.append(lines[i])
+            i += 1
+        text = '\n'.join(res)
     # В JUDG все ветви GO TO (10,20,30,40),K сходятся в 50: удалить блок.
     if name == 'GLOUT':
         lines = text.split('\n')

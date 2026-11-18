@@ -323,11 +323,13 @@ sh TOOLS/install-2348.sh 1
 
 **Фактическое состояние после установки:**
 
-- `~/.besm6/2348`, md5 `7ec7c5b351c479235c2280abfca7ea27`;
-- зона 2700(8) занимает 6 зон, каталог содержит 22 входа: `GLDIAL`,
-  `PROGRAM`, 20 Fortran-процедур (`INITD`, `PROIZV`, `MOTOR`, `GLAUTO`,
-  `PROGC`, `PRVIN`, `SBATM`, `SBRND`, `TURB`, `FRAME`, `DISPL`, `JUDG`,
-  `GLSET`, `GLT`, `GLSOST`, `GLBUR`, `GLSEED`, `GLSC`, `GLVOD`, `GLANG`);
+- `~/.besm6/2348`, md5 `8da10bb57879e36fb141002b1f96f60c`;
+- зона 2700(8) занимает 6 зон, каталог содержит 23 входа: `GLDIAL`,
+  `PROGRAM`, блок `*ТТХDАТ*` и 20 Fortran-процедур (`INITD`, `PROIZV`,
+  `MOTOR`, `GLAUTO`, `PROGC`, `PRVIN`, `SBATM`, `SBRND`, `TURB`, `FRAME`,
+  `DISPL`, `JUDG`, `GLSET`, `GLT`, `GLSOST`, `GLBUR`, `GLSEED`, `GLSC`,
+  `GLVOD`, `GLANG`). Числовые ТТХ вынесены в `SRC/GLTTX.FTN`
+  (`docs/analysis/ttx-audit.md`);
 - контрольный `*call gldial`: `PASRED 11/11`, `OCENKA= 3`,
   `КОНЕЦ ЗАДАЧИ`, `*74`, 0 ошибок;
 - резервная копия до записи: `~/.besm6/2348.bak-before-dialog-2700-20261118-075426`.
