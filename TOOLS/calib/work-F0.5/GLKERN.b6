@@ -1,0 +1,477 @@
+шифр 419999 зс5^
+лен 40(2348-wr)^
+ОЗУ 32^
+АЦПУ 140^
+ТРА 37^
+eeв1а3
+*name GLKERN
+*call yesmemory
+*perso:402700
+*forex
+C==============================================================
+C     ГЛИССАДА-6. ОТДЕЛЬНЫЙ БЛОК ТТХ САМОЛЕТОВ.
+C     ЗДЕСЬ ВСЕ ЧИСЛОВЫЕ ДАННЫЕ, КОТОРЫЕ МЕНЯЮТСЯ ПРИ НАСТРОЙКЕ.
+C     ПОРЯДОК СТОЛБЦОВ: 1-МИГ-15, 2-ИЛ-28, 3-ТУ-104, 4-АН-24,
+C                       5-АН-2.
+C     ЧТОБЫ ИЗМЕНИТЬ САМОЛЕТ, ПРАВИТЬ ТОЛЬКО ЭТОТ ФАЙЛ.
+C     TALFS - УГОЛ СРЫВА, ВЫЧИСЛЕН КАК (CLMX-CL0)/CLA.
+C     ОБОЗНАЧЕНИЯ: [Д] ДОКУМЕНТ, [Р] РАСЧЕТ, [О] ОЦЕНКА,
+C                  [И] ИГРОВАЯ КАЛИБРОВКА (СМ. DOCS/ANALYSIS/
+C                  TTX-AUDIT.MD).
+C==============================================================
+      BLOCK DATA GLTTX
+      COMMON /TTXDAT/
+     1TGM(5),TS(5),TBB(5),TCC(5),TCL0(5),TCLA(5),TCLMX(5),TCD0(5),
+     1TAK(5),TCMA(5),TCM0(5),TCMDE(5),TCMQ(5),TCLB(5),TCLDA(5),
+     1TCLP(5),TCNB(5),TCNDR(5),TCNR(5),TCYB(5),TETYPE(5),
+     1TTHMAX(5),TPMAX(5),TVTHR(5),THCR(5),TJX(5),TJY(5),TJZ(5),
+     1TALFS(5)
+      DATA TGM /3915., 14750., 58000., 20000., 5250./
+      DATA TS /20.6, 60.8, 344.6, 74.98, 71.52/
+      DATA TBB /10.08, 21.45, 34.54, 29.2, 18.18/
+      DATA TCC /2.12, 2.955, 5.4, 2.813, 2.269/
+      DATA TCL0 /0.15, 0.20, 0.22, 0.30, 0.72/
+      DATA TCLA /5.7, 4.8, 4.2, 4.6, 3.66/
+      DATA TCLMX /1.46, 1.57, 1.35, 1.60, 1.95/
+      DATA TCD0 /0.025, 0.034, 0.030, 0.032, 0.027/
+      DATA TAK /0.081, 0.053, 0.115, 0.035, 0.092/
+      DATA TCMA /-0.84, -0.9, -0.8, -0.9, -0.90/
+      DATA TCM0 /0.025, 0.02, 0.02, 0.03, 0.02/
+      DATA TCMDE /0.67, 1.00, 0.90, 0.90, 0.95/
+      DATA TCMQ /-8.0, -9.0, -10.0, -9.0, -9.0/
+      DATA TCLB /-0.20, -0.07, -0.08, -0.07, -0.10/
+      DATA TCLDA /0.23, 0.09, 0.08, 0.09, 0.09/
+      DATA TCLP /-0.35, -0.40, -0.45, -0.40, -0.35/
+      DATA TCNB /-0.20, -0.10, -0.11, -0.10, -0.12/
+      DATA TCNDR /-0.08, -0.07, -0.06, -0.07, -0.09/
+      DATA TCNR /-0.12, -0.15, -0.18, -0.15, -0.15/
+      DATA TCYB /-0.76, -1.0, -1.0, -1.0, -1.0/
+      DATA TETYPE /1, 1, 1, 2, 2/
+      DATA TTHMAX /22600., 52000., 168000., 50000., 13000./
+      DATA TPMAX /0., 0., 0., 3800000., 735000./
+      DATA TVTHR /72., 69., 78., 57., 32./
+      DATA THCR /1.8, 2.2, 2.5, 2.0, 2.5/
+      DATA TJX /4800., 28000., 800000., 120000., 12000./
+      DATA TJY /11500., 62000., 2200000., 300000., 23000./
+      DATA TJZ /15000., 83000., 2800000., 380000., 38000./
+      DATA TALFS /0.2298, 0.2854, 0.2690, 0.2826, 0.3361/
+      END
+C==============================================================
+C     ГЛИССАДА-6. ИНИЦИАЛИЗАЦИЯ ТИПА САМОЛЕТА.
+C     ВСЕ ЧИСЛОВЫЕ ТТХ ВЫНЕСЕНЫ В SRC/GLTTX.FTN, БЛОК /TTXDAT/.
+C     ПРАВКИ ТТХ ДЕЛАТЬ ТАМ, ЗДЕСЬ ТОЛЬКО ПЕРЕНОС В /SOST/.
+C==============================================================
+      SUBROUTINE INITD(KTIP)
+      COMMON /TTXDAT/ TGM(5),TS(5),TBB(5),TCC(5),TCL0(5),TCLA(5),
+     1TCLMX(5),TCD0(5),TAK(5),TCMA(5),TCM0(5),TCMDE(5),TCMQ(5),
+     1TCLB(5),TCLDA(5),TCLP(5),TCNB(5),TCNDR(5),TCNR(5),TCYB(5),
+     1TETYPE(5),TTHMAX(5),TPMAX(5),TVTHR(5),THCR(5),TJX(5),TJY(5),
+     1TJZ(5),TALFS(5)
+      COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
+     1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
+      COMMON /INERC/ JX,JY,JZ
+      GM=TGM(KTIP)
+      S=TS(KTIP)
+      BB=TBB(KTIP)
+      CC=TCC(KTIP)
+      CL0=TCL0(KTIP)
+      CLA=TCLA(KTIP)
+      CLMX=TCLMX(KTIP)
+      CD0=TCD0(KTIP)
+      AK=TAK(KTIP)
+      CMA=TCMA(KTIP)
+      CM0=TCM0(KTIP)
+      CMDE=TCMDE(KTIP)
+      CMQ=TCMQ(KTIP)
+      CLB=TCLB(KTIP)
+      CLDA=TCLDA(KTIP)
+      CLP=TCLP(KTIP)
+      CNB=TCNB(KTIP)
+      CNDR=TCNDR(KTIP)
+      CNR=TCNR(KTIP)
+      CYB=TCYB(KTIP)
+      ETYPE=TETYPE(KTIP)
+      THMAX=TTHMAX(KTIP)
+      PMAX=TPMAX(KTIP)
+      VTHR=TVTHR(KTIP)
+      HCR=THCR(KTIP)
+      JX=TJX(KTIP)
+      JY=TJY(KTIP)
+      JZ=TJZ(KTIP)
+      RETURN
+      END
+C==============================================================
+C     ГЛИССАДА-6. ПРАВЫЕ ЧАСТИ УРАВНЕНИЙ ДВИЖЕНИЯ
+C     (6 СТЕПЕНЕЙ СВОБОДЫ) И ДВИГАТЕЛИ.
+C     МОМЕНТЫ: WX-КРЕН, WY-РЫСКАНИЕ, WZ-ТАНГАЖ (ОСИ КОРПУСА).
+C==============================================================
+      SUBROUTINE PROIZV(X,U,XD)
+      DIMENSION X(13),U(4),XD(13)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /TTXDAT/ TGM(5),TS(5),TBB(5),TCC(5),TCL0(5),TCLA(5),
+     1TCLMX(5),TCD0(5),TAK(5),TCMA(5),TCM0(5),TCMDE(5),TCMQ(5),
+     1TCLB(5),TCLDA(5),TCLP(5),TCNB(5),TCNDR(5),TCNR(5),TCYB(5),
+     1TETYPE(5),TTHMAX(5),TPMAX(5),TVTHR(5),THCR(5),TJX(5),TJY(5),
+     1TJZ(5),TALFS(5)
+      COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
+     1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
+      COMMON /INERC/ JX,JY,JZ
+      COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
+      COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
+C     МАТРИЦА КОСИНУСОВ КОРПУС->ЗЕМЛЯ
+      Q0=X(4)
+      Q1=X(5)
+      Q2=X(6)
+      Q3=X(7)
+      A11=Q0*Q0+Q1*Q1-Q2*Q2-Q3*Q3
+      A12=2.*(Q1*Q2-Q0*Q3)
+      A13=2.*(Q1*Q3+Q0*Q2)
+      A21=2.*(Q1*Q2+Q0*Q3)
+      A22=Q0*Q0-Q1*Q1+Q2*Q2-Q3*Q3
+      A23=2.*(Q2*Q3-Q0*Q1)
+      A31=2.*(Q1*Q3-Q0*Q2)
+      A32=2.*(Q2*Q3+Q0*Q1)
+      A33=Q0*Q0-Q1*Q1-Q2*Q2+Q3*Q3
+C     ВОЗДУШНАЯ СКОРОСТЬ В ОСЯХ КОРПУСА (ЗЕМЛЯ->КОРПУС)
+      V1=X(1)-WGX
+      V2=X(2)-WGY
+      V3=X(3)-WGZ
+      VB1=A11*V1+A21*V2+A31*V3
+      VB2=A12*V1+A22*V2+A32*V3
+      VB3=A13*V1+A23*V2+A33*V3
+      VA=SQRT(VB1*VB1+VB2*VB2+VB3*VB3)
+      IF(VA.LT.5.) VA=5.
+      ALFA=ATAN2(-VB2,VB1)
+      BETA=ATAN2(VB3,SQRT(VB1*VB1+VB2*VB2))
+C     АТМОСФЕРА: ПЛОТНОСТЬ ПО ВЫСОТЕ (СБ ИЛИ МСА)
+      CALL SBATM(X(13),TK,RHO)
+      QBAR=0.5*RHO*VA*VA
+C     ПОДЪЕМНАЯ СИЛА: ЛИНЕЙНЫЙ УЧАСТОК, ЗАТЕМ СРЫВ
+      CL=CL0+CLA*ALFA
+      ALFS=TALFS(KTIP)
+      IF(ABS(ALFA).GT.ALFS) CL=SIGN(CLMX*(1.-1.5*(ABS(ALFA)-ALFS)),CL)
+      IF(ABS(CL).GT.CLMX) CL=SIGN(CLMX,CL)
+      CD=CD0+AK*CL*CL
+      CALL MOTOR(U(4),VA,THR)
+C     СИЛЫ В ОСЯХ КОРПУСА: АЭРОДИНАМИКА, ТЯГА, ВЕС
+      SA=SIN(ALFA)
+      CA=COS(ALFA)
+      FB1=QBAR*S*(-CD*CA+CL*SA)+THR
+      FB2=QBAR*S*(CD*SA+CL*CA)
+      FB3=QBAR*S*CYB*BETA
+      GMG=9.81*GM
+      FB1=FB1-GMG*A21
+      FB2=FB2-GMG*A22
+      FB3=FB3-GMG*A23
+      XD(1)=(A11*FB1+A12*FB2+A13*FB3)/GM
+      XD(2)=(A21*FB1+A22*FB2+A23*FB3)/GM
+      XD(3)=(A31*FB1+A32*FB2+A33*FB3)/GM
+C     МОМЕНТЫ ОТНОСИТЕЛЬНО ОСЕЙ КОРПУСА
+      PH=BB/(2.*VA)
+      QH=CC/(2.*VA)
+      AMX=QBAR*S*BB*(CLB*BETA+CLDA*U(2)+CLP*X(8)*PH)
+      AMY=QBAR*S*BB*(CNB*BETA+CNDR*U(3)+CNR*X(9)*PH)
+      AMZ=QBAR*S*CC*(CM0+CMA*ALFA+CMDE*U(1)+CMQ*X(10)*QH)
+      XD(8)=(AMX+(JY-JZ)*X(9)*X(10))/JX
+      XD(9)=(AMY+(JZ-JX)*X(10)*X(8))/JY
+      XD(10)=(AMZ+(JX-JY)*X(8)*X(9))/JZ
+C     КИНЕМАТИКА КВАТЕРНИОНА
+      XD(4)=-0.5*(X(8)*Q1+X(9)*Q2+X(10)*Q3)
+      XD(5)=0.5*(X(8)*Q0+X(9)*Q3-X(10)*Q2)
+      XD(6)=0.5*(X(9)*Q0+X(10)*Q1-X(8)*Q3)
+      XD(7)=0.5*(X(10)*Q0+X(8)*Q2-X(9)*Q1)
+      XD(11)=X(1)
+      XD(12)=X(3)
+      XD(13)=X(2)
+      ALFA=ALFA*57.2958
+      BETA=BETA*57.2958
+      CLV=CL
+      CDV=CD
+      RETURN
+      END
+C     ДВИГАТЕЛИ: 1-ТРД, 2-ТВД. УПРОЩЕННЫЕ ДРОССЕЛЬНЫЕ ХАР-КИ.
+      SUBROUTINE MOTOR(DTZ,VA,TH)
+      COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
+     1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
+      IF(ETYPE.EQ.2.) GO TO 10
+      TH=THMAX*(0.06+0.94*DTZ)*(1.0-0.0006*VA)
+      RETURN
+   10 TH=DTZ*AMIN1(THMAX,1.6*PMAX/AMAX1(VA,30.))
+      RETURN
+      END
+C==============================================================
+C     ГЛИССАДА-6. АВТОПИЛАТ (КАЛИБРОВОЧНАЯ КОПИЯ).
+C==============================================================
+      SUBROUTINE GLAUTO(X,U)
+      DIMENSION X(13),U(4)
+      COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
+     1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
+      COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
+      COMMON /APSTAT/ FVY(5)
+      IF(T.LE.0.11) FVY(KTIP)=X(2)
+      FVY(KTIP)=FVY(KTIP)+0.2*(X(2)-FVY(KTIP))
+      EGLI=X(13)+0.05241*X(11)
+      GO TO (100,200,300,400,500),KTIP
+  100 CONTINUE
+      GE=0.5
+      IF(SIGW.GT.0.) GE=0.01824
+      VYC=-0.05241*X(1)-GE*EGLI
+      IF(X(13).LT.HCR+(32)) VYC=(-0.6061)
+      DE=(-0.04964)*(FVY(KTIP)-VYC)-(1.029)*X(10)
+      GO TO 150
+  200 CONTINUE
+      EGLI=EGLI+(-18)
+      GE=0.5
+      IF(SIGW.GT.0.) GE=0.15864
+      VYC=-0.05241*X(1)-GE*EGLI
+      IF(X(13).LT.HCR+(61)) VYC=(-0.4807)
+      DE=(-0.08244)*(FVY(KTIP)-VYC)-(0.61)*X(10)
+      GO TO 150
+  300 CONTINUE
+      GE=0.5
+      IF(SIGW.GT.0.) GE=0.04153
+      VYC=-0.05241*X(1)-GE*EGLI
+      IF(X(13).LT.HCR+(20)) VYC=(-0.4)
+      DE=(-0.09894)*(FVY(KTIP)-VYC)-(2.401)*X(10)
+      GO TO 150
+  400 CONTINUE
+      EGLI=EGLI+(-20)
+      GE=0.2
+      IF(SIGW.GT.0.) GE=0.12552
+      VYC=-0.05241*X(1)-GE*EGLI
+      IF(X(13).LT.HCR+(170)) VYC=(-0.415)
+      DE=(-0.13557)*(FVY(KTIP)-VYC)-(2.362)*X(10)
+      GO TO 150
+  500 CONTINUE
+      EGLI=EGLI+(-30)
+      GE=0.2
+      IF(SIGW.GT.0.) GE=0.04696
+      VYC=-0.05241*X(1)-GE*EGLI
+      IF(X(13).LT.HCR+(3)) VYC=(-0.2923)
+      DE=(-0.25843)*(FVY(KTIP)-VYC)-(1.127)*X(10)
+      GO TO 150
+  150 CONTINUE
+      IF(DE.GT.0.30) DE=0.30
+      IF(DE.LT.-0.30) DE=-0.30
+      U(1)=DE
+      DTZ=0.35+2.0*(VTHR-X(1))/VTHR
+      IF(DTZ.GT.1.) DTZ=1.
+      IF(DTZ.LT.0.) DTZ=0.
+      U(4)=DTZ
+      DA=-0.0008*X(12)-0.02*X(3)-0.25*X(8)
+      IF(DA.GT.0.15) DA=0.15
+      IF(DA.LT.-0.15) DA=-0.15
+      U(2)=DA
+      DR=-1.0*X(9)+0.03*BETA
+      IF(DR.GT.0.20) DR=0.20
+      IF(DR.LT.-0.20) DR=-0.20
+      U(3)=DR
+      RETURN
+      END
+C==============================================================
+C     ГЛИССАДА-6. РЕЗЕРВНЫЙ АДАПТЕР (БЕЗ ОБРАЩЕНИЙ К СБ).
+C     ЗАМЕНЯЕТ SRC/GLNUM.FTN В КОЛОДАХ КОНТРОЛЬНЫХ ПРОГОНОВ,
+C     ПОКА НЕ ПОДТВЕРЖДЕНА ДОСТУПНОСТЬ СБ (ATM/NR) В СРЕДЕ.
+C     ПЛОТНОСТЬ - МСА ДО 11 КМ; СЛУЧАЙНЫЕ - ЛЕМЕР + ЦПТ.
+C     ПОЛЕ БИБЛ.СБ КАРТЫ 1 ЗДЕСЬ НЕ ДЕЙСТВУЕТ.
+C==============================================================
+C-----СТАНДАРТНАЯ АТМОСФЕРА: ФОРМУЛЫ МСА
+      SUBROUTINE SBATM(HG,TK,RHO)
+      TK=288.15-0.0065*HG
+      IF(HG.GT.11000.) TK=216.65
+      RHO=1.225*(TK/288.15)**4.2559
+      IF(HG.GT.11000.) RHO=0.3639*EXP(-9.80665*(HG-11000.)/
+     1(287.05*216.65))
+      RETURN
+      END
+C-----НОРМАЛЬНАЯ СЛУЧАЙНАЯ ВЕЛИЧИНА: СУММА 12 РАВНОМЕРНЫХ
+C     (ЛЕМЕР + ЦЕНТРАЛЬНАЯ ПРЕДЕЛЬНАЯ ТЕОРЕМА)
+      FUNCTION SBRND(SIG)
+      COMMON /SBSEED/ RSEED
+      ACC=0.
+      DO 11 I=1,12
+      RSEED=AMOD(997.*RSEED+0.731644,1.0)
+   11 ACC=ACC+RSEED
+      SBRND=SIG*(ACC-6.)
+      RETURN
+      END
+C-----ТУРБУЛЕНТНОСТЬ: ФИЛЬТР ОРНШТЕЙНА-УЛЕНБЕКА, 3 КАНАЛА
+C     DW/DT = -W/TAU + SIG*SQRT(2/TAU)*КСИ
+      SUBROUTINE TURB
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
+      IF(SIGW.LE.0.) GO TO 20
+      AK1=SIGW*SQRT(2.*DTSHAG/TAU)
+      WGX=WGX+(-WGX/TAU)*DTSHAG+AK1*SBRND(1.)
+      WGY=WGY+(-WGY/TAU)*DTSHAG+AK1*SBRND(1.)
+      WGZ=WGZ+(-WGZ/TAU)*DTSHAG+AK1*SBRND(1.)
+      RETURN
+   20 WGX=0.
+      WGY=0.
+      WGZ=0.
+      RETURN
+      END
+C==============================================================
+C     ГЛИССАДА-6. КАДР АЦПУ, ВЫВОД НА ДИСПЛЕЙ, ОЦЕНКА ПОСАДКИ.
+C     ПЕРВАЯ ПОЗИЦИЯ СТРОКИ - УПРАВЛЕНИЕ КАРАЖКОМ АЦПУ.
+C==============================================================
+      SUBROUTINE FRAME(X,U)
+      DIMENSION X(13),U(4),LINE(41)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
+      DATA NBLANK/1H /,NSTAR/1H*/
+C     ЭЙЛЕРОВЫ УГЛЫ ИЗ КВАТЕРНИОНА (ТАНГЕНСЫ ПОЛУ-УГЛОВ)
+      Q0=X(4)
+      A11=Q0*Q0+X(5)*X(5)-X(6)*X(6)-X(7)*X(7)
+      A21=2.*(X(5)*X(6)+Q0*X(7))
+      A31=2.*(X(5)*X(7)-Q0*X(6))
+      A22=Q0*Q0-X(5)*X(5)+X(6)*X(6)-X(7)*X(7)
+      A32=2.*(X(6)*X(7)+Q0*X(5))
+      ST=A21
+      IF(ABS(ST).GT.0.999) ST=SIGN(0.999,ST)
+      THETA=ATAN(ST/SQRT(1.-ST*ST))*57.2958
+      PSI=ATAN2(-A31,A11)*57.2958
+      GAM=ATAN2(A32,A22)*57.2958
+      DTM=-X(11)
+      EGLI=X(13)+0.05241*X(11)
+      IPOS=21+IFIX(EGLI/5.)
+      IF(IPOS.LT.1) IPOS=1
+      IF(IPOS.GT.41) IPOS=41
+      DO 10 I=1,41
+   10 LINE(I)=NBLANK
+      LINE(IPOS)=NSTAR
+C     WRITE(6,700) T,DTM,X(13)
+  700 FORMAT(1H0,8HGLISSADA,2X,2HT=,F7.1,2H S,6H DALN=,F7.0,
+     16H  VYS=,F8.1)
+C     WRITE(6,701) VA,X(2),ALFA,100.*U(4)
+  701 FORMAT(1H ,5HSKOR=,F6.1,4H M/S,6H VERT=,F7.2,4H M/S,
+     17H ATAKA=,F5.1,3H GR,6H TYAG=,F4.0,4H PRC)
+C     WRITE(6,702) U(1)*57.2958,U(2)*57.2958,U(3)*57.2958,THETA,GAM,
+     1PSI
+  702 FORMAT(1H ,3HRV=,F6.1,3H GR,3HEL=,F6.1,3H GR,3HRN=,F6.1,
+     13H GR,5HTANG=,F6.1,3H GR,5HKREN=,F6.1,3H GR,5HKURS=,F6.1,
+     23H GR)
+C     WRITE(6,703)
+  703 FORMAT(1H ,17X,14HGLISSADA 3 GR.)
+C     WRITE(6,704) (LINE(I),I=1,41)
+  704 FORMAT(1H ,17X,41A1)
+C     WRITE(6,705) X(12),EGLI
+  705 FORMAT(1H ,9HKURS LUCH,4H  Y=,F7.1,2H M,7H  GLIS=,F7.1,2H M,/)
+      RETURN
+      END
+C     КОРОТКАЯ СТРОКА НА ДИСПЛЕЙ (КАНАЛ 12)
+      SUBROUTINE DISPL(X)
+      DIMENSION X(13)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      WRITE(12,710) T,X(13),X(2),-X(11)
+  710 FORMAT(3HDSP,3H T=,F7.1,4H VYS,F7.1,5H VERT,F7.2,
+     15H DALN,F7.0)
+      RETURN
+      END
+C     ОЦЕНКА ПОСАДКИ ПО ВЕРТИКАЛЬНОЙ СКОРОСТИ И ТОЧКЕ КАСАНИЯ
+      SUBROUTINE JUDG(X)
+      DIMENSION X(13)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /SCHET/ SUME,NEGL
+      VY=X(2)
+      DTK=X(11)
+      AVY=ABS(VY)
+      K=4
+      IF(AVY.LE.4.0) K=3
+      IF(AVY.LE.2.5) K=2
+      IF(AVY.LE.1.5) K=1
+      SKO=0.
+      IF(NEGL.GT.0) SKO=SQRT(SUME/FLOAT(NEGL))
+C     WRITE(6,800)
+  800 FORMAT(1H1,30X,14HOCENKA POSADKI,//)
+C     WRITE(6,801) VY
+  801 FORMAT(1H0,20HVERT. SKOROST KASAN.,F6.2,4H M/S)
+C     WRITE(6,802) DTK
+  802 FORMAT(1H ,25HTOCHKA KASANIYA OT POROGA,F7.0,2H M)
+C     WRITE(6,803) X(12)
+  803 FORMAT(1H ,18HSMESHCHENIE OT OSI,F7.1,2H M)
+C     WRITE(6,804) SKO
+  804 FORMAT(1H ,15HSKO OT GLISSADY,F7.2,2H M)
+   50 CONTINUE
+C     WRITE(6,850) K
+  850 FORMAT(1H0,7HOCENKA=,I2)
+C     IF(X(11).LT.0.) WRITE(6,860)
+  860 FORMAT(1H0,25HAVARIA: KASANIE DO POROGA)
+C     WRITE(6,870) T
+  870 FORMAT(1H0,2HT=,F7.1,7H SEKUND)
+      RETURN
+      END
+C==============================================================
+C     ГЛИССАДА-6. АКСЕССОРЫ COMMON ДЛЯ ПАСКАЛЬ-ОБОЛОЧКИ.
+C     ПАСКАЛЬ ВЫЗЫВАЕТ ИХ КАК FORTRAN-ПОДПРОГРАММЫ.
+C     ФИКТИВНЫЕ АРГУМЕНТЫ НЕ ДОЛЖНЫ СОВПАДАТЬ С ИМЕНАМИ COMMON.
+C==============================================================
+      SUBROUTINE GLSET(TIN,DT,K,M,IC,NR,IF,TM)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      T=TIN
+      DTSHAG=DT
+      KTIP=K
+      MODE=M
+      ICTRL=IC
+      NFR=NR
+      IFLIB=IF
+      TMAX=TM
+      END
+      SUBROUTINE GLT(TOUT)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      TOUT=T
+      END
+      SUBROUTINE GLSOST(VTHO,HCRO)
+      COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
+     1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTH,HCR
+      VTHO=VTH
+      HCRO=HCR
+      END
+      SUBROUTINE GLSEED(RS)
+      COMMON /SBSEED/ RSEED
+      RSEED=RS
+      END
+      SUBROUTINE GLBUR(SIG,TAUIN,WX,WY,WZ)
+      COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
+      WGX=WX
+      WGY=WY
+      WGZ=WZ
+      SIGW=SIG
+      TAU=TAUIN
+      END
+      SUBROUTINE GLSC(SU,NE)
+      COMMON /SCHET/ SUME,NEGL
+      SUME=SU
+      NEGL=NE
+      END
+      SUBROUTINE GLVOD(VAOUT,ALF)
+      COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
+      ALF=ALFA
+      VAOUT=VA
+      END
+      SUBROUTINE GLANG(X,TH,GA,PS,DTM,EG,IP)
+      DIMENSION X(13)
+      COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
+      Q0=X(4)
+      A11=Q0*Q0+X(5)*X(5)-X(6)*X(6)-X(7)*X(7)
+      A21=2.*(X(5)*X(6)+Q0*X(7))
+      A31=2.*(X(5)*X(7)-Q0*X(6))
+      A22=Q0*Q0-X(5)*X(5)+X(6)*X(6)-X(7)*X(7)
+      A32=2.*(X(6)*X(7)+Q0*X(5))
+      ST=A21
+      IF(ABS(ST).GT.0.999) ST=SIGN(0.999,ST)
+      TH=ATAN(ST/SQRT(1.-ST*ST))*57.2958
+      PS=ATAN2(-A31,A11)*57.2958
+      GA=ATAN2(A32,A22)*57.2958
+      DTM=-X(11)
+      EG=X(13)+0.05241*X(11)
+      IP=21+IFIX(EG/5.)
+      IF(IP.LT.1) IP=1
+      IF(IP.GT.41) IP=41
+      END
+*to perso:402700
+*end file
+``````
+еконец

@@ -30,7 +30,7 @@ ZONE = sys.argv[2] if len(sys.argv) > 2 else '2700'
 LU = '40'                     # логический номер устройства с томом 2348
 PERSOCARD = f'{LU}{ZONE}'      # например 402700 -> карта *perso:402700
 
-CORE = ['GLTTX', 'GLINITD', 'GLPROIZ', 'GLAUTO', 'GLNUMR', 'GLOUT', 'GLACC']
+CORE = ['GLTTX', 'GLGAIN', 'GLINITD', 'GLPROIZ', 'GLAUTO', 'GLNUMR', 'GLOUT', 'GLACC']
 
 
 def gost(text: str) -> str:

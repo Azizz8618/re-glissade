@@ -15,6 +15,7 @@ C     ЗДЕСЬ ВСЕ ЧИСЛОВЫЕ ДАННЫЕ, КОТОРЫЕ МЕНЯЮ
 C     ПОРЯДОК СТОЛБЦОВ: 1-МИГ-15, 2-ИЛ-28, 3-ТУ-104, 4-АН-24,
 C                       5-АН-2.
 C     ЧТОБЫ ИЗМЕНИТЬ САМОЛЕТ, ПРАВИТЬ ТОЛЬКО ЭТОТ ФАЙЛ.
+C     TALFS - УГОЛ СРЫВА, ВЫЧИСЛЕН КАК (CLMX-CL0)/CLA.
 C     ОБОЗНАЧЕНИЯ: [Д] ДОКУМЕНТ, [Р] РАСЧЕТ, [О] ОЦЕНКА,
 C                  [И] ИГРОВАЯ КАЛИБРОВКА (СМ. DOCS/ANALYSIS/
 C                  TTX-AUDIT.MD).
@@ -24,35 +25,86 @@ C==============================================================
      1TGM(5),TS(5),TBB(5),TCC(5),TCL0(5),TCLA(5),TCLMX(5),TCD0(5),
      1TAK(5),TCMA(5),TCM0(5),TCMDE(5),TCMQ(5),TCLB(5),TCLDA(5),
      1TCLP(5),TCNB(5),TCNDR(5),TCNR(5),TCYB(5),TETYPE(5),
-     1TTHMAX(5),TPMAX(5),TVTHR(5),THCR(5),TJX(5),TJY(5),TJZ(5)
-      DATA TGM /5000., 21000., 62000., 20000., 5250./
+     1TTHMAX(5),TPMAX(5),TVTHR(5),THCR(5),TJX(5),TJY(5),
+     1TJZ(5),TALFS(5)
+      DATA TGM /3915., 14750., 58000., 20000., 5250./
       DATA TS /20.6, 60.8, 344.6, 74.98, 71.52/
       DATA TBB /10.08, 21.45, 34.54, 29.2, 18.18/
       DATA TCC /2.12, 2.955, 5.4, 2.813, 2.269/
       DATA TCL0 /0.15, 0.20, 0.22, 0.30, 0.72/
-      DATA TCLA /4.5, 4.8, 4.2, 4.6, 3.66/
-      DATA TCLMX /1.30, 1.95, 1.35, 1.60, 1.95/
+      DATA TCLA /5.7, 4.8, 4.2, 4.6, 3.66/
+      DATA TCLMX /1.46, 1.57, 1.35, 1.60, 1.95/
       DATA TCD0 /0.025, 0.034, 0.030, 0.032, 0.027/
-      DATA TAK /0.081, 0.053, 0.115, 0.046, 0.092/
-      DATA TCMA /-1.0, -0.9, -0.8, -0.9, -0.90/
-      DATA TCM0 /0.01, 0.02, 0.02, 0.03, 0.02/
-      DATA TCMDE /1.10, 1.00, 0.90, 0.90, 0.95/
+      DATA TAK /0.081, 0.053, 0.115, 0.035, 0.092/
+      DATA TCMA /-0.84, -0.9, -0.8, -0.9, -0.90/
+      DATA TCM0 /0.025, 0.02, 0.02, 0.03, 0.02/
+      DATA TCMDE /0.67, 1.00, 0.90, 0.90, 0.95/
       DATA TCMQ /-8.0, -9.0, -10.0, -9.0, -9.0/
-      DATA TCLB /-0.06, -0.07, -0.08, -0.07, -0.10/
-      DATA TCLDA /0.10, 0.09, 0.08, 0.09, 0.09/
+      DATA TCLB /-0.20, -0.07, -0.08, -0.07, -0.10/
+      DATA TCLDA /0.23, 0.09, 0.08, 0.09, 0.09/
       DATA TCLP /-0.35, -0.40, -0.45, -0.40, -0.35/
-      DATA TCNB /-0.09, -0.10, -0.11, -0.10, -0.12/
+      DATA TCNB /-0.20, -0.10, -0.11, -0.10, -0.12/
       DATA TCNDR /-0.08, -0.07, -0.06, -0.07, -0.09/
       DATA TCNR /-0.12, -0.15, -0.18, -0.15, -0.15/
-      DATA TCYB /-1.0, -1.0, -1.0, -1.0, -1.0/
+      DATA TCYB /-0.76, -1.0, -1.0, -1.0, -1.0/
       DATA TETYPE /1, 1, 1, 2, 2/
       DATA TTHMAX /22600., 52000., 168000., 50000., 13000./
       DATA TPMAX /0., 0., 0., 3800000., 735000./
-      DATA TVTHR /72., 55., 78., 57., 32./
+      DATA TVTHR /72., 69., 78., 57., 32./
       DATA THCR /1.8, 2.2, 2.5, 2.0, 2.5/
       DATA TJX /4800., 28000., 800000., 120000., 12000./
       DATA TJY /11500., 62000., 2200000., 300000., 23000./
       DATA TJZ /15000., 83000., 2800000., 380000., 38000./
+      DATA TALFS /0.2298, 0.2854, 0.2690, 0.2826, 0.3361/
+      END
+C==============================================================
+C     ГЛИССАДА-6. БЛОК УСИЛЕНИЙ АВТОПИЛОТА ПО ПОГОДЕ.
+C     ГЕНЕРИРУЕТСЯ: TOOLS/CALIB/WRITE_GLGAIN.PY.
+C     НЕ ПРАВИТЬ ВРУЧНУЮ - ПРАВИТЬ TOOLS/CALIB/LEVELS/*.JSON.
+C==============================================================
+      BLOCK DATA GLGAIN
+      COMMON /APGAIN/ PGE(5,5),PKV(5,5),PKD(5,5),CG(5,5),SLVL(5)
+      DATA PGE(1,1), PGE(1,2), PGE(1,3), PGE(1,4), PGE(1,5) / 0.5, 0.5,
+     10.5, 0.2, 0.2 /
+      DATA PGE(2,1), PGE(2,2), PGE(2,3), PGE(2,4), PGE(2,5) / 0.042373,
+     10.214226, 0.789686, 1.37982, 0.324122 /
+      DATA PGE(3,1), PGE(3,2), PGE(3,3), PGE(3,4), PGE(3,5) / 0.103189,
+     10.113917, 0.256298, 0.530878, 0.057783 /
+      DATA PGE(4,1), PGE(4,2), PGE(4,3), PGE(4,4), PGE(4,5) / 0.035145,
+     10.396271, 0.223042, 0.210309, 0.155111 /
+      DATA PGE(5,1), PGE(5,2), PGE(5,3), PGE(5,4), PGE(5,5) / 0.219538,
+     10.562851, 0.090683, 1.14145, 0.013938 /
+      DATA PKV(1,1), PKV(1,2), PKV(1,3), PKV(1,4), PKV(1,5) / 0.04964,
+     10.08244, 0.09894, 0.13557, 0.25843 /
+      DATA PKV(2,1), PKV(2,2), PKV(2,3), PKV(2,4), PKV(2,5) / 0.049592,
+     10.778415, 0.115737, 1.02752, 1.60478 /
+      DATA PKV(3,1), PKV(3,2), PKV(3,3), PKV(3,4), PKV(3,5) / 0.226099,
+     10.33247, 0.632583, 0.349525, 0.183648 /
+      DATA PKV(4,1), PKV(4,2), PKV(4,3), PKV(4,4), PKV(4,5) / 0.082947,
+     10.576035, 0.388877, 0.307478, 0.112561 /
+      DATA PKV(5,1), PKV(5,2), PKV(5,3), PKV(5,4), PKV(5,5) / 0.157684,
+     10.160976, 0.208629, 0.237013, 1.62747 /
+      DATA PKD(1,1), PKD(1,2), PKD(1,3), PKD(1,4), PKD(1,5) / 1.029,
+     10.61, 2.401, 2.362, 1.127 /
+      DATA PKD(2,1), PKD(2,2), PKD(2,3), PKD(2,4), PKD(2,5) / 1.1034,
+     14.5561, 3.1586, 14.4689, 11.713 /
+      DATA PKD(3,1), PKD(3,2), PKD(3,3), PKD(3,4), PKD(3,5) / 11.1796,
+     12.053, 26.8248, 8.9871, 4.2452 /
+      DATA PKD(4,1), PKD(4,2), PKD(4,3), PKD(4,4), PKD(4,5) / 1.9716,
+     15.731, 3.9125, 5.6339, 1.2871 /
+      DATA PKD(5,1), PKD(5,2), PKD(5,3), PKD(5,4), PKD(5,5) / 11.7937,
+     10.8914, 6.6843, 8.5687, 7.1597 /
+      DATA CG(1,1), CG(1,2), CG(1,3), CG(1,4), CG(1,5) / 0, 0, 0, 0,
+     10 /
+      DATA CG(2,1), CG(2,2), CG(2,3), CG(2,4), CG(2,5) / 0, 0, 0, 0,
+     10 /
+      DATA CG(3,1), CG(3,2), CG(3,3), CG(3,4), CG(3,5) / 0, 0, 0, 0,
+     10 /
+      DATA CG(4,1), CG(4,2), CG(4,3), CG(4,4), CG(4,5) / 0, 0, 0, 0,
+     10 /
+      DATA CG(5,1), CG(5,2), CG(5,3), CG(5,4), CG(5,5) / 0, 0, 0, 0,
+     10 /
+      DATA SLVL /0, 0.3, 0.5, 1, 1.5/
       END
 C==============================================================
 C     ГЛИССАДА-6. ИНИЦИАЛИЗАЦИЯ ТИПА САМОЛЕТА.
@@ -64,7 +116,7 @@ C==============================================================
      1TCLMX(5),TCD0(5),TAK(5),TCMA(5),TCM0(5),TCMDE(5),TCMQ(5),
      1TCLB(5),TCLDA(5),TCLP(5),TCNB(5),TCNDR(5),TCNR(5),TCYB(5),
      1TETYPE(5),TTHMAX(5),TPMAX(5),TVTHR(5),THCR(5),TJX(5),TJY(5),
-     1TJZ(5)
+     1TJZ(5),TALFS(5)
       COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
      1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
       COMMON /INERC/ JX,JY,JZ
@@ -106,6 +158,11 @@ C==============================================================
       SUBROUTINE PROIZV(X,U,XD)
       DIMENSION X(13),U(4),XD(13)
       COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /TTXDAT/ TGM(5),TS(5),TBB(5),TCC(5),TCL0(5),TCLA(5),
+     1TCLMX(5),TCD0(5),TAK(5),TCMA(5),TCM0(5),TCMDE(5),TCMQ(5),
+     1TCLB(5),TCLDA(5),TCLP(5),TCNB(5),TCNDR(5),TCNR(5),TCYB(5),
+     1TETYPE(5),TTHMAX(5),TPMAX(5),TVTHR(5),THCR(5),TJX(5),TJY(5),
+     1TJZ(5),TALFS(5)
       COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
      1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
       COMMON /INERC/ JX,JY,JZ
@@ -141,7 +198,7 @@ C     АТМОСФЕРА: ПЛОТНОСТЬ ПО ВЫСОТЕ (СБ ИЛИ МС
       QBAR=0.5*RHO*VA*VA
 C     ПОДЪЕМНАЯ СИЛА: ЛИНЕЙНЫЙ УЧАСТОК, ЗАТЕМ СРЫВ
       CL=CL0+CLA*ALFA
-      ALFS=0.30
+      ALFS=TALFS(KTIP)
       IF(ABS(ALFA).GT.ALFS) CL=SIGN(CLMX*(1.-1.5*(ABS(ALFA)-ALFS)),CL)
       IF(ABS(CL).GT.CLMX) CL=SIGN(CLMX,CL)
       CD=CD0+AK*CL*CL
@@ -193,8 +250,10 @@ C     ДВИГАТЕЛИ: 1-ТРД, 2-ТВД. УПРОЩЕННЫЕ ДРОССЕ�
       RETURN
       END
 C==============================================================
-C     ГЛИССАДА-6. АВТОПИЛАТ ЗАХОДА (РЕЖИМ 1) И ПРОГРАММА
-C     ПИЛОТИРОВАНИЯ С КАРТ (РЕЖИМ 2). КОЭФФИЦИЕНТЫ - ДЛЯ НАЛАДКИ.
+C     ГЛИССАДА-6. АВТОПИЛАТ ЗАХОДА (РЕЖИМ 1).
+C     УСИЛЕНИЯ ВЫБИРАЮТСЯ ПО SIGW ИЗ БЛОКА /APGAIN/ (GLGAIN.FTN),
+C     КОТОРЫЙ ГЕНЕРИРУЕТСЯ ИЗ TOOLS/CALIB/LEVELS/*.JSON.
+C     OFF/HFL/VYF - КОНСТАНТЫ ТИПА, ВЗЯТЫ ИЗ TOOLS/CALIB/BEST.JSON.
 C==============================================================
       SUBROUTINE GLAUTO(X,U)
       DIMENSION X(13),U(4)
@@ -203,51 +262,56 @@ C==============================================================
       COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
       COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
       COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
-C     ВЕРТИКАЛЬНЫЙ КАНАЛ: ЗАДАННАЯ ВЕРТ. СКОРОСТЬ ПО ГЛИССАДЕ
-C     КОЭФФИЦИЕНТЫ ПОДОБРАНЫ ДЛЯ КАЖДОГО ТИПА ОТДЕЛЬНО
+      COMMON /APGAIN/ PGE(5,5),PKV(5,5),PKD(5,5),CG(5,5),SLVL(5)
+C     БЛИЖАЙШИЙ УРОВЕНЬ ТУРБУЛЕНТНОСТИ
+      L=1
+      D=ABS(SIGW-SLVL(1))
+      DO 10 J=2,5
+      IF(ABS(SIGW-SLVL(J)).GE.D) GO TO 10
+      L=J
+      D=ABS(SIGW-SLVL(J))
+   10 CONTINUE
+      GE=PGE(L,KTIP)
+      EKV=PKV(L,KTIP)
+      EKD=PKD(L,KTIP)
       EGLI=X(13)+0.05241*X(11)
       GO TO (100,200,300,400,500),KTIP
-  100 GE=0.50
-      IF(SIGW.GT.0.) GE=0.08
+  100 CONTINUE
       VYC=-0.05241*X(1)-GE*EGLI
-      IF(X(13).LT.HCR+30.) VYC=-0.5
-      DE=-0.04*(X(2)-VYC)-0.5*X(10)
+      IF(X(13).LT.HCR+(32)) VYC=(-0.6061)
+      DE=(-EKV)*(X(2)-VYC)-EKD*X(10)
       GO TO 150
-  200 EGLI=EGLI-18.
-      GE=0.50
-      IF(SIGW.GT.0.) GE=0.08
+  200 CONTINUE
+      EGLI=EGLI+(-18)
       VYC=-0.05241*X(1)-GE*EGLI
-      IF(X(13).LT.HCR+40.) VYC=-0.4
-      DE=-0.06*(X(2)-VYC)-0.5*X(10)
+      IF(X(13).LT.HCR+(61)) VYC=(-0.4807)
+      DE=(-EKV)*(X(2)-VYC)-EKD*X(10)
       GO TO 150
-  300 GE=0.50
-      IF(SIGW.GT.0.) GE=0.08
+  300 CONTINUE
       VYC=-0.05241*X(1)-GE*EGLI
-      IF(X(13).LT.HCR+12.) VYC=-0.7
-      DE=-0.025*(X(2)-VYC)-0.5*X(10)
+      IF(X(13).LT.HCR+(20)) VYC=(-0.4)
+      DE=(-EKV)*(X(2)-VYC)-EKD*X(10)
       GO TO 150
-  400 EGLI=EGLI-20.
-      VYC=-0.05241*X(1)-0.20*EGLI
-      IF(X(13).LT.HCR+30.) VYC=-0.5
-      DE=-0.04*(X(2)-VYC)-0.5*X(10)
-      GO TO 150
-  500 EGLI=EGLI-30.
-      GE=0.20
-      IF(SIGW.GT.0.) GE=0.08
+  400 CONTINUE
+      EGLI=EGLI+(-20)
       VYC=-0.05241*X(1)-GE*EGLI
-      IF(X(13).LT.HCR+4.) VYC=-0.5
-      DE=-0.04*(X(2)-VYC)-0.5*X(10)
+      IF(X(13).LT.HCR+(170)) VYC=(-0.415)
+      DE=(-EKV)*(X(2)-VYC)-EKD*X(10)
+      GO TO 150
+  500 CONTINUE
+      EGLI=EGLI+(-30)
+      VYC=-0.05241*X(1)-GE*EGLI
+      IF(X(13).LT.HCR+(3)) VYC=(-0.2923)
+      DE=(-EKV)*(X(2)-VYC)-EKD*X(10)
       GO TO 150
   150 CONTINUE
       IF(DE.GT.0.30) DE=0.30
       IF(DE.LT.-0.30) DE=-0.30
       U(1)=DE
-C     ТЯГА: ДЕРЖАНИЕ ПОСАДОЧНОЙ СКОРОСТИ
       DTZ=0.35+2.0*(VTHR-X(1))/VTHR
       IF(DTZ.GT.1.) DTZ=1.
       IF(DTZ.LT.0.) DTZ=0.
       U(4)=DTZ
-C     БОКОВОЙ КАНАЛ: УДЕРЖАНИЕ ОСИ ВПП, ДЕМПФЕРЫ КРЕНА И РЫСКАНИЯ
       DA=-0.0008*X(12)-0.02*X(3)-0.25*X(8)
       IF(DA.GT.0.15) DA=0.15
       IF(DA.LT.-0.15) DA=-0.15

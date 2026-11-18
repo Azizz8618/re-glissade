@@ -1,6 +1,8 @@
 C==============================================================
-C     ГЛИССАДА-6. АВТОПИЛАТ ЗАХОДА (РЕЖИМ 1) И ПРОГРАММА
-C     ПИЛОТИРОВАНИЯ С КАРТ (РЕЖИМ 2). КОЭФФИЦИЕНТЫ - ДЛЯ НАЛАДКИ.
+C     ГЛИССАДА-6. АВТОПИЛАТ ЗАХОДА (РЕЖИМ 1).
+C     УСИЛЕНИЯ ВЫБИРАЮТСЯ ПО SIGW ИЗ БЛОКА /APGAIN/ (GLGAIN.FTN),
+C     КОТОРЫЙ ГЕНЕРИРУЕТСЯ ИЗ TOOLS/CALIB/LEVELS/*.JSON.
+C     OFF/HFL/VYF - КОНСТАНТЫ ТИПА, ВЗЯТЫ ИЗ TOOLS/CALIB/BEST.JSON.
 C==============================================================
       SUBROUTINE GLAUTO(X,U)
       DIMENSION X(13),U(4)
@@ -9,51 +11,56 @@ C==============================================================
       COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
       COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
       COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
-C     ВЕРТИКАЛЬНЫЙ КАНАЛ: ЗАДАННАЯ ВЕРТ. СКОРОСТЬ ПО ГЛИССАДЕ
-C     КОЭФФИЦИЕНТЫ ПОДОБРАНЫ ДЛЯ КАЖДОГО ТИПА ОТДЕЛЬНО
+      COMMON /APGAIN/ PGE(5,5),PKV(5,5),PKD(5,5),CG(5,5),SLVL(5)
+C     БЛИЖАЙШИЙ УРОВЕНЬ ТУРБУЛЕНТНОСТИ
+      L=1
+      D=ABS(SIGW-SLVL(1))
+      DO 10 J=2,5
+      IF(ABS(SIGW-SLVL(J)).GE.D) GO TO 10
+      L=J
+      D=ABS(SIGW-SLVL(J))
+   10 CONTINUE
+      GE=PGE(L,KTIP)
+      EKV=PKV(L,KTIP)
+      EKD=PKD(L,KTIP)
       EGLI=X(13)+0.05241*X(11)
       GO TO (100,200,300,400,500),KTIP
-  100 GE=0.50
-      IF(SIGW.GT.0.) GE=0.08
+  100 CONTINUE
       VYC=-0.05241*X(1)-GE*EGLI
-      IF(X(13).LT.HCR+30.) VYC=-0.5
-      DE=-0.04*(X(2)-VYC)-0.5*X(10)
+      IF(X(13).LT.HCR+(32)) VYC=(-0.6061)
+      DE=(-EKV)*(X(2)-VYC)-EKD*X(10)
       GO TO 150
-  200 EGLI=EGLI-18.
-      GE=0.50
-      IF(SIGW.GT.0.) GE=0.08
+  200 CONTINUE
+      EGLI=EGLI+(-18)
       VYC=-0.05241*X(1)-GE*EGLI
-      IF(X(13).LT.HCR+40.) VYC=-0.4
-      DE=-0.06*(X(2)-VYC)-0.5*X(10)
+      IF(X(13).LT.HCR+(61)) VYC=(-0.4807)
+      DE=(-EKV)*(X(2)-VYC)-EKD*X(10)
       GO TO 150
-  300 GE=0.50
-      IF(SIGW.GT.0.) GE=0.08
+  300 CONTINUE
       VYC=-0.05241*X(1)-GE*EGLI
-      IF(X(13).LT.HCR+12.) VYC=-0.7
-      DE=-0.025*(X(2)-VYC)-0.5*X(10)
+      IF(X(13).LT.HCR+(20)) VYC=(-0.4)
+      DE=(-EKV)*(X(2)-VYC)-EKD*X(10)
       GO TO 150
-  400 EGLI=EGLI-20.
-      VYC=-0.05241*X(1)-0.20*EGLI
-      IF(X(13).LT.HCR+30.) VYC=-0.5
-      DE=-0.04*(X(2)-VYC)-0.5*X(10)
-      GO TO 150
-  500 EGLI=EGLI-30.
-      GE=0.20
-      IF(SIGW.GT.0.) GE=0.08
+  400 CONTINUE
+      EGLI=EGLI+(-20)
       VYC=-0.05241*X(1)-GE*EGLI
-      IF(X(13).LT.HCR+4.) VYC=-0.5
-      DE=-0.04*(X(2)-VYC)-0.5*X(10)
+      IF(X(13).LT.HCR+(170)) VYC=(-0.415)
+      DE=(-EKV)*(X(2)-VYC)-EKD*X(10)
+      GO TO 150
+  500 CONTINUE
+      EGLI=EGLI+(-30)
+      VYC=-0.05241*X(1)-GE*EGLI
+      IF(X(13).LT.HCR+(3)) VYC=(-0.2923)
+      DE=(-EKV)*(X(2)-VYC)-EKD*X(10)
       GO TO 150
   150 CONTINUE
       IF(DE.GT.0.30) DE=0.30
       IF(DE.LT.-0.30) DE=-0.30
       U(1)=DE
-C     ТЯГА: ДЕРЖАНИЕ ПОСАДОЧНОЙ СКОРОСТИ
       DTZ=0.35+2.0*(VTHR-X(1))/VTHR
       IF(DTZ.GT.1.) DTZ=1.
       IF(DTZ.LT.0.) DTZ=0.
       U(4)=DTZ
-C     БОКОВОЙ КАНАЛ: УДЕРЖАНИЕ ОСИ ВПП, ДЕМПФЕРЫ КРЕНА И РЫСКАНИЯ
       DA=-0.0008*X(12)-0.02*X(3)-0.25*X(8)
       IF(DA.GT.0.15) DA=0.15
       IF(DA.LT.-0.15) DA=-0.15
