@@ -18,6 +18,8 @@ var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     KTIP,MODE,ICTRL,NFR,IFLIB,NPRN,NMAX,NSTP,NEGL,IPOS:integer;
     I,J,IH,JA,JG,IB,K,OCE:integer; OK,RUN,PAUS:boolean;
     IMODE,IEX:integer;
+    EXKTIP:array[1..5] of integer;
+    EXSIGW,EXRSEED,EXDT0,EXTMAX:array[1..5] of real;
     pastel: array[0..25] of Bitset;
 (* диалог *)
 procedure PASRED(var D:ARG); external;
@@ -219,6 +221,16 @@ end;
 begin
   PASTEL[3]:=[48];
   IMODE:=0; IEX:=1;
+  EXKTIP[1]:=3; EXSIGW[1]:=0.0; EXRSEED[1]:=7351.0;
+  EXDT0[1]:=0.60; EXTMAX[1]:=2400.0;
+  EXKTIP[2]:=1; EXSIGW[2]:=1.5; EXRSEED[2]:=7351.5;
+  EXDT0[2]:=0.60; EXTMAX[2]:=2400.0;
+  EXKTIP[3]:=2; EXSIGW[3]:=0.5; EXRSEED[3]:=7351.5;
+  EXDT0[3]:=0.60; EXTMAX[3]:=2400.0;
+  EXKTIP[4]:=4; EXSIGW[4]:=0.0; EXRSEED[4]:=7351.5;
+  EXDT0[4]:=0.60; EXTMAX[4]:=2400.0;
+  EXKTIP[5]:=5; EXSIGW[5]:=0.3; EXRSEED[5]:=7351.5;
+  EXDT0[5]:=0.60; EXTMAX[5]:=2400.0;
   PARAMS;
   INIT;
   PAUS:=true; RUN:=false;
@@ -234,7 +246,14 @@ begin
         CMD='UNF   ': begin writeln('UNFREEZE');
           RUN:=true; PAUS:=false end;
         CMD='SEL   ': begin ASK; GTINT(IEX,OK);
-          writeln('EXERCISE=',IEX:1,' SELECTED'); PAUS:=true end;
+          if (IEX>=1) and (IEX<=5) then
+          begin
+            KTIP:=EXKTIP[IEX]; SIGW:=EXSIGW[IEX];
+            RSEED:=EXRSEED[IEX]; DT0:=EXDT0[IEX];
+            TMAX:=EXTMAX[IEX]; INIT;
+            writeln('EXERCISE=',IEX:1,' SELECTED')
+          end else writeln('NO EXERCISE');
+          PAUS:=true end;
         CMD='HLP   ': if IMODE=0 then
           writeln('PIL: STA STE STO PAR PRN AUTO INS EXIT')
           else writeln('INS: SEL FRZ UNF INJ REC PLY SCR HLP PIL');
