@@ -425,14 +425,15 @@ C     ГЛИССАДА-6. АДАПТИВНЫЙ ШАГ ПО КУТТА-МЕРСО
 C     РЕКОНСТРУКЦИЯ ПОДПРОГРАММЫ АД01 С ДИСКА 2248:
 C     KUTTAMERSON(N,X,Y,EPS,H,FCT,FIRST) - АВТОМАТИЧЕСКИЙ ВЫБОР ШАГА.
 C     ВСЕ КОРРЕКТИРУЕМЫЕ ПАРАМЕТРЫ - В БЛОКЕ /KMCTL/.
+C     ОШИБКА ОТНОСИТЕЛЬНАЯ С ПОРОГОМ PFLOOR (ПО АНАЛОГИИ С DE13R).
 C==============================================================
       BLOCK DATA KMAINT
-      COMMON /KMCTL/ EPSKM,HMIN,HMAX,SAFETY,MAXTRY,EXPN
+      COMMON /KMCTL/ EPSKM,HMIN,HMAX,SAFETY,MAXTRY,EXPN,PFLOOR
       DATA EPSKM/1.0E-4/,HMIN/0.001/,HMAX/1.0/,SAFETY/0.9/,
-     1MAXTRY/5/,EXPN/0.2/
+     1MAXTRY/5/,EXPN/0.2/,PFLOOR/1.0/
       END
       SUBROUTINE KMPAR(EPS,HMN,HMX,SF,NT,EX)
-      COMMON /KMCTL/ EPSKM,HMIN,HMAX,SAFETY,MAXTRY,EXPN
+      COMMON /KMCTL/ EPSKM,HMIN,HMAX,SAFETY,MAXTRY,EXPN,PFLOOR
       EPS=EPSKM
       HMN=HMIN
       HMX=HMAX
@@ -440,18 +441,53 @@ C==============================================================
       NT=MAXTRY
       EX=EXPN
       END
+      SUBROUTINE KMPAR2(PF)
+      COMMON /KMCTL/ EPSKM,HMIN,HMAX,SAFETY,MAXTRY,EXPN,PFLOOR
+      PF=PFLOOR
+      END
       SUBROUTINE KMSET(EPS)
-      COMMON /KMCTL/ EPSKM,HMIN,HMAX,SAFETY,MAXTRY,EXPN
+      COMMON /KMCTL/ EPSKM,HMIN,HMAX,SAFETY,MAXTRY,EXPN,PFLOOR
       EPSKM=EPS
+      END
+      SUBROUTINE KMSETP(PF)
+      COMMON /KMCTL/ EPSKM,HMIN,HMAX,SAFETY,MAXTRY,EXPN,PFLOOR
+      PFLOOR=PF
+      END
+      SUBROUTINE KMERR(X,U,DT,P,ERR)
+      DIMENSION X(13),U(4)
+      DIMENSION K1(13),K2(13),K3(13),K4(13),K5(13),K6(13),XA(13)
+      H=DT
+      CALL PROIZV(X,U,K1)
+      DO 10 I=1,13
+   10 XA(I)=X(I)+H*K1(I)/3.
+      CALL PROIZV(XA,U,K2)
+      DO 20 I=1,13
+   20 XA(I)=X(I)+H*(K1(I)+K2(I))/6.
+      CALL PROIZV(XA,U,K3)
+      DO 30 I=1,13
+   30 XA(I)=X(I)+H*(K1(I)+3.*K3(I))/8.
+      CALL PROIZV(XA,U,K4)
+      DO 40 I=1,13
+   40 XA(I)=X(I)+H*(K1(I)-3.*K3(I)+4.*K4(I))/2.
+      CALL PROIZV(XA,U,K5)
+      DO 50 I=1,13
+   50 XA(I)=X(I)+H*(K1(I)+4.*K4(I)+K5(I))/6.
+      CALL PROIZV(XA,U,K6)
+      ERR=0.
+      DO 60 I=1,13
+      E=ABS((2.*K1(I)-9.*K3(I)+8.*K4(I)-K5(I))/30.)
+      IF(P.GT.0. .AND. ABS(X(I)).GE.P) E=E/ABS(X(I))
+      IF(E.GT.ERR) ERR=E
+   60 CONTINUE
       END
       SUBROUTINE KUTMAD(X,U,DT,EPS,HNEW,ERR,IFAIL)
       DIMENSION X(13),U(4)
-      COMMON /KMCTL/ EPSKM,HMIN,HMAX,SAFETY,MAXTRY,EXPN
+      COMMON /KMCTL/ EPSKM,HMIN,HMAX,SAFETY,MAXTRY,EXPN,PFLOOR
       H=DT
       ERR=0.0
       IFAIL=0
       DO 10 ITRY=1,MAXTRY
-      CALL KUTMER(X,U,H,E)
+      CALL KMERR(X,U,H,PFLOOR,E)
       IF(E.LE.EPS) GO TO 20
       IF(H.LE.HMIN) GO TO 30
       R=EPS/E
@@ -472,7 +508,7 @@ C==============================================================
       HNEW=H
       IF(HNEW.LT.HMIN) HNEW=HMIN
       IF(HNEW.GT.HMAX) HNEW=HMAX
-      CALL KUTMER(X,U,HNEW,E)
+      CALL KMERR(X,U,HNEW,PFLOOR,E)
       ERR=E
       IFAIL=1
       END

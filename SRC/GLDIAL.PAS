@@ -15,7 +15,8 @@ var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     U:VEC4; B:ARG; CMD:alfa;
     T,TMAX,RSEED,SIGW,DT0,DTSH,TAU,SUME,EGLI,DTM,ZERO,AVY:real;
     QN,VA,ALF,TH,GA,PS,VTHR,VHCR,ERMAX,ERR:real;
-    EPSKM,HNEW,KMHMIN,KMHMAX,KMSF,KMEXP:real; KMTRY:integer;
+    EPSKM,HNEW,KMHMIN,KMHMAX,KMSF,KMEXP,PFL:real; KMTRY:integer;
+    TCTRL,DTCTRL:real; UHOLD:VEC4;
     KTIP,MODE,ICTRL,NFR,IFLIB,NPRN,NMAX,NSTP,NEGL,IPOS:integer;
     I,J,IH,JA,JG,IB,K,OCE:integer; OK,RUN,PAUS:boolean;
     IMODE,IEX,IFLT:integer;
@@ -42,7 +43,9 @@ procedure KUTMAD(var X:VEC13; var U:VEC4; var DT,EPS:real;
 procedure KMRK4(var X:VEC13; var U:VEC4; var H:real); fortran;
 procedure KMPAR(var EPS,HMN,HMX,SF:real;
            var NT:integer; var EX:real); fortran;
+procedure KMPAR2(var PF:real); fortran;
 procedure KMSET(var EPS:real); fortran;
+procedure KMSETP(var PF:real); fortran;
 procedure GLFINJ(var K:integer; var U:VEC4); fortran;
 procedure GLFCLR; fortran;
 (* регистратор: параметры в /RECPAR/ *)
@@ -154,6 +157,8 @@ end;
 procedure INIT;
 begin
   KMPAR(EPSKM,KMHMIN,KMHMAX,KMSF,KMTRY,KMEXP);
+  KMPAR2(PFL);
+  TCTRL:=0.0; DTCTRL:=H;
   GLFCLR;
   RECCLR; SCCLR;
   MANUAL:=false; DE:=0.0; DA:=0.0; DR:=0.0; DTZ:=DT0;
@@ -182,13 +187,27 @@ begin
   if ICTRL<>3 then
   begin
     T:=T+DTSH;
-    GLSET(T,DTSH,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX)
-  end;
-  if MANUAL then
-  begin
-    U[1]:=DE; U[2]:=DA; U[3]:=DR; U[4]:=DTZ
+    GLSET(T,DTSH,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX);
+    if MANUAL then
+    begin
+      U[1]:=DE; U[2]:=DA; U[3]:=DR; U[4]:=DTZ
+    end
+    else if MODE=1 then GLAUTO(X,U) else PROGC(T,U)
   end
-  else if MODE=1 then GLAUTO(X,U) else PROGC(T,U);
+  else
+  begin
+    if T>=TCTRL then
+    begin
+      if MANUAL then
+      begin
+        U[1]:=DE; U[2]:=DA; U[3]:=DR; U[4]:=DTZ
+      end
+      else if MODE=1 then GLAUTO(X,U) else PROGC(T,U);
+      for I:=1 to 4 do UHOLD[I]:=U[I];
+      TCTRL:=T+DTCTRL
+    end
+    else for I:=1 to 4 do U[I]:=UHOLD[I]
+  end;
   SCPUT(U);
   TURB;
   if ICTRL=3 then
@@ -364,6 +383,8 @@ begin
             writeln('EXERCISE=',IEX:1,' SELECTED')
           end else writeln('NO EXERCISE');
           PAUS:=true end;
+        CMD='PFL   ': begin ASK; GTRL(PFL,OK); KMSETP(PFL);
+          writeln('PFL=',PFL:10:3) end;
         CMD='EPS   ': begin ASK; GTRL(EPSKM,OK); KMSET(EPSKM);
           writeln('EPS=',EPSKM:10:3) end;
         CMD='HLP   ': if IMODE=0 then

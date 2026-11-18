@@ -273,3 +273,12 @@ END;
 `pascal-re/AGENTS.md` (183–192, 262–282), `pasdd1.pas`,
 `besm-crypto/golden/gost_08.05.2025.pas`, `mc-7401/golden/graf.pas`,
 `SRC/GL*.FTN`, `docs/PLAN-DIALOG.md`, `RUNS/run-2026-11-17-clean/`.
+
+## 6. Команды адаптивного шага
+
+| Команда | Аргумент | Действие |
+|---|---|---|
+| `EPS` | допуск | задать `EPS` для адаптивного шага (`ICTRL=3`) |
+| `PFL` | порог | задать порог нормы ошибки ошибки |
+
+Подробности — `docs/analysis/km-adaptive-calibration.md`.
