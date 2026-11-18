@@ -16,6 +16,7 @@ C==============================================================
       COMMON /SBSEED/ RSEED
       COMMON /SCHET/ SUME,NEGL
 C     КАРТА 1: ТИП,РЕЖИМ,КОНТРОЛЬ,ПЕЧАТЬ АЦПУ,БИБЛ.СБ  (5I5)
+      ERMAX=0.
       READ(5,900) KTIP,MODE,ICTRL,NFR,IFLIB
   900 FORMAT(5I5)
 C     КАРТА 2: ВРЕМЯ,СЕМЯ СЛУЧ.ЧИСЕЛ,ТУРБУЛЕНТНОСТЬ,ТЯГА (4F8.0)
@@ -60,6 +61,11 @@ C     НАЧАЛЬНЫЕ УСЛОВИЯ: ВХОД В ГЛИССАДУ, 15 КМ �
       IF(MODE.EQ.1) CALL GLAUTO(X,U)
       IF(MODE.EQ.2) CALL PROGC(T,U)
       CALL TURB
+C     РЕЗЕРВНЫЙ КОНТРОЛЬ ТОЧНОСТИ (ПОЛЕ 3 КАРТЫ 1)
+      IF(ICTRL.EQ.0) GO TO 155
+      CALL KUTMER(X,U,DTSHAG,ERR)
+      IF(ERR.GT.ERMAX) ERMAX=ERR
+  155 CONTINUE
       CALL PROIZV(X,U,K1)
       DO 100 I=1,13
   100 X1(I)=X(I)+0.5*DTSHAG*K1(I)
@@ -94,8 +100,11 @@ C     ЗАЩИТА ОТ РАЗВАЛА СЧЕТА
       STOP
  2000 CALL FRAME(X,U)
       CALL JUDG(X)
+      IF(ICTRL.NE.0) WRITE(6,905) ERMAX
+  905 FORMAT(1H0,27HKONTROL KUTTA-MERSON ERMAX=,E12.4)
       STOP
  2100 WRITE(6,904)
   904 FORMAT(1H1,10X,19HAVARIA: RAZRUSHENIE)
+      IF(ICTRL.NE.0) WRITE(6,905) ERMAX
       STOP
       END

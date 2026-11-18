@@ -13,7 +13,7 @@ type VEC13=array[1..13] of real;
 var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     U:VEC4; B:ARG; CMD:alfa;
     T,TMAX,RSEED,SIGW,DT0,DTSH,TAU,SUME,EGLI,DTM,ZERO,AVY:real;
-    QN,VA,ALF,TH,GA,PS,VTHR,VHCR:real;
+    QN,VA,ALF,TH,GA,PS,VTHR,VHCR,ERMAX,ERR:real;
     KTIP,MODE,ICTRL,NFR,IFLIB,NPRN,NMAX,NSTP,NEGL,IPOS:integer;
     I,J,IH,JA,JG,IB,K,OCE:integer; OK,RUN,PAUS:boolean;
 (* диалог *)
@@ -24,6 +24,7 @@ procedure PROIZV(var X:VEC13; var U:VEC4; var XD:VEC13); fortran;
 procedure GLAUTO(var X:VEC13; var U:VEC4); fortran;
 procedure PROGC(var T:real; var U:VEC4); fortran;
 procedure TURB; fortran;
+procedure KUTMER(var X:VEC13; var U:VEC4; var DT,ERR:real); fortran;
 procedure PRVIN; fortran;
 procedure JUDG(var X:VEC13); fortran;
 (* аксессоры GLACC *)
@@ -141,6 +142,11 @@ begin
   GLSET(T,DTSH,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX);
   if MODE=1 then GLAUTO(X,U) else PROGC(T,U);
   TURB;
+  if ICTRL>=2 then
+  begin
+    KUTMER(X,U,DTSH,ERR);
+    if ERR>ERMAX then ERMAX:=ERR
+  end;
   PROIZV(X,U,VK1);
   for I:=1 to 13 do VX1[I]:=X[I]+0.5*DTSH*VK1[I];
   PROIZV(VX1,U,VK2);
@@ -234,12 +240,16 @@ begin
         if AVY<=2.5 then OCE:=2;
         if AVY<=1.5 then OCE:=1;
         writeln('OCENKA= ',OCE:1);
+        if ICTRL>=2 then
+          writeln('KONTROL ERMAX=',ERMAX:10:4);
         RUN:=false; PAUS:=true
       end;
       if X[13] < -100.0 then
       begin writeln('AVARIA: RAZRUSHENIE'); RUN:=false; PAUS:=true end;
       if NSTP>=NMAX then
       begin writeln('LIMIT VREMENI: T=',T:7:0);
+            if ICTRL>=2 then
+          writeln('KONTROL ERMAX=',ERMAX:10:4);
             RUN:=false; PAUS:=true end;
       if (not PAUS) and (NSTP mod NPRN=0) and (ICTRL=1)
       then CMDLOOP(CMD)
