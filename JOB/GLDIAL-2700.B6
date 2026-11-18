@@ -9,7 +9,7 @@ eeв1а3
 *call yesmemory
 *perso:402700
 *call *pascal
-PROGRAM GLDIAL(INPUT,OUTPUT);(*=S7,L3,U+*)
+PROGRAM GLDIAL(INPUT,OUTPUT,PASTEL);(*=S7,L3,U+,Y+*)
 (************************************************************)
 (* ГЛИССАДА-6. ТЕКСТОВЫЙ ДИАЛОГ. ПЕЧАТЬ - ПАСКАЛЬ.             *)
 (* ЯДРО - ФОРТРАН: GLINITD, GLPROIZ, GLAUTO, GLNUMR, GLOUT.   *)
@@ -17,6 +17,7 @@ PROGRAM GLDIAL(INPUT,OUTPUT);(*=S7,L3,U+*)
 CONST H=0.1; RAD=57.2958; NL=41;
 TYPE VEC13=ARRAY[1..13] OF REAL;
      VEC4=ARRAY[1..4] OF REAL;
+     BITSET=SET OF 0..47;
      ARG=RECORD
        BUFLEN,INPLEN,DUMMY1,DUMMY2:INTEGER;
        A:PACKED ARRAY[1..140] OF CHAR
@@ -27,6 +28,7 @@ VAR X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     QN,VA,ALF,TH,GA,PS,VTHR,VHCR,ERMAX,ERR:REAL;
     KTIP,MODE,ICTRL,NFR,IFLIB,NPRN,NMAX,NSTP,NEGL,IPOS:INTEGER;
     I,J,IH,JA,JG,IB,K,OCE:INTEGER; OK,RUN,PAUS:BOOLEAN;
+    PASTEL: ARRAY[0..25] OF BITSET;
 (* ДИАЛОГ *)
 PROCEDURE PASRED(VAR D:ARG); EXTERNAL;
 (* ЯДРО *)
@@ -222,6 +224,7 @@ BEGIN
 END;
 (************************************************************)
 BEGIN
+  PASTEL[3]:=[48];
   PARAMS;
   INIT;
   PAUS:=TRUE; RUN:=FALSE;

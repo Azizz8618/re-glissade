@@ -1,4 +1,4 @@
-program GLDIAL(input,output);(*=s7,l3,u+*)
+program GLDIAL(input,output,pastel);(*=s7,l3,u+,Y+*)
 (************************************************************)
 (* ГЛИССАДА-6. ТЕКСТОВЫЙ ДИАЛОГ. ПЕЧАТЬ - ПАСКАЛЬ.             *)
 (* ЯДРО - ФОРТРАН: GLINITD, GLPROIZ, GLAUTO, GLNUMR, GLOUT.   *)
@@ -6,6 +6,7 @@ program GLDIAL(input,output);(*=s7,l3,u+*)
 const H=0.1; RAD=57.2958; NL=41;
 type VEC13=array[1..13] of real;
      VEC4=array[1..4] of real;
+     Bitset=set of 0..47;
      ARG=record
        buflen,inplen,dummy1,dummy2:integer;
        A:packed array[1..140] of char
@@ -16,6 +17,7 @@ var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     QN,VA,ALF,TH,GA,PS,VTHR,VHCR,ERMAX,ERR:real;
     KTIP,MODE,ICTRL,NFR,IFLIB,NPRN,NMAX,NSTP,NEGL,IPOS:integer;
     I,J,IH,JA,JG,IB,K,OCE:integer; OK,RUN,PAUS:boolean;
+    pastel: array[0..25] of Bitset;
 (* диалог *)
 procedure PASRED(var D:ARG); external;
 (* ядро *)
@@ -211,6 +213,7 @@ begin
 end;
 (************************************************************)
 begin
+  PASTEL[3]:=[48];
   PARAMS;
   INIT;
   PAUS:=true; RUN:=false;
