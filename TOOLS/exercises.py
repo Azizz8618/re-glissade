@@ -10,6 +10,7 @@ Seed, тягу и цель посадки. Скрипт прогоняет уп�
   show N          — параметры упражнения N (T1…T5 или номер);
   run N           — прогон;
   verify [N]      — прогон со сверкой с целью;
+  score           — оценка задания по каждому упражнению (GLSCORE);
   report          — Markdown-отчёт.
 
 Пример:
@@ -54,10 +55,13 @@ def find(key):
     raise SystemExit('нет упражнения: ' + key)
 
 
-def run_game(ex, timeout=240):
+def run_game(ex, timeout=240, score=False):
     answers = [str(ex['ktip']), '1', '0', '5', '0', str(ex['tmax']),
                str(ex['rseed']), str(ex['sigw']), str(ex['dt0']),
-               'STA', 'EXIT']
+               'STA']
+    if score:
+        answers.append('SCR')
+    answers.append('EXIT')
     master, slave = pty.openpty()
     env = dict(os.environ)
     env['BESM6_PATH'] = str(Path.home() / '.besm6') + ':/usr/local/share/besm6'
@@ -107,11 +111,15 @@ def run_game(ex, timeout=240):
         m = re.findall(pattern, text)
         return float(m[-1]) if m else None
 
+    sm = re.search(r'Д..ИЯ=\s*([-\d.E+]+)', text)
+    zm = re.search(r'Ч.T=\s*(\d)', text)
     vert = last(r'VERT=\s*([-\d.E+]+)')
     oce = last(r'OCENKA=\s*(\d+)')
     daln = last(r'DALN=\s*([-\d.E+]+)')
     return {'vert': vert, 'ocenka': int(oce) if oce is not None else None,
             'tch': -daln if daln is not None else None,
+            'score': float(sm.group(1)) if sm else None,
+            'zachet': int(zm.group(1)) if zm else None,
             'answers': sent, 'complete': 'ЗАДАЧИ' in text}
 
 
@@ -150,6 +158,20 @@ def cmd_verify(args):
     print('итого: OK=%d, не достигнуто=%d' % (ok, bad))
 
 
+def cmd_score(args):
+    print('%-3s %-9s %-8s %-8s %s' % ('ID', 'самолёт', 'ОЦЕНКА', 'ЗАЧЁТ', 'балл'))
+    passed = 0
+    for e in load_all():
+        r = run_game(e, score=True)
+        z = r['zachet']
+        print('%-3s %-9s %-8s %-8s %s' % (
+            e['id'], NAMES.get(e['ktip'], '?'),
+            r['ocenka'], 'да' if z == 1 else 'нет',
+            r['score']))
+        passed += z == 1
+    print('итого: зачёт=%d из %d' % (passed, len(load_all())))
+
+
 def cmd_report(args):
     lines = ['# УПРАЖНЕНИЯ ТРЕНАЖЁРА «ГЛИССАДА-6»', '',
              'Упражнения описаны в `TOOLS/exercises/*.json` и прогоняются',
@@ -173,10 +195,11 @@ def main():
     a = sub.add_parser('show'); a.add_argument('key')
     a = sub.add_parser('run'); a.add_argument('key')
     v = sub.add_parser('verify'); v.add_argument('key', nargs='?')
+    sc = sub.add_parser('score'); sc.add_argument('key', nargs='?')
     sub.add_parser('report')
     args = ap.parse_args()
     {'list': cmd_list, 'show': cmd_show, 'run': cmd_run,
-     'verify': cmd_verify, 'report': cmd_report}[args.cmd](args)
+     'verify': cmd_verify, 'score': cmd_score, 'report': cmd_report}[args.cmd](args)
 
 
 if __name__ == '__main__':

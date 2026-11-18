@@ -21,6 +21,8 @@ var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     MANUAL:boolean; DE,DA,DR,DTZ:real;
     RECON:boolean; NFRMX,NEVMX,NSTEP,IEVK:integer;
     RX:VEC13; RU:VEC4; RT:real;
+    SCVERT,SCTOCH,SCY,SCSKO,SCUPR,SCPLAV,SCTOT:real; SCZACH:integer;
+    SCW1,SCW2,SCW3,SCW4,SCW5,SCW6:real;
     EXKTIP:array[1..5] of integer;
     EXSIGW,EXRSEED,EXDT0,EXTMAX:array[1..5] of real;
     pastel: array[0..25] of Bitset;
@@ -45,6 +47,12 @@ procedure RCN(var NF,NEV:integer); fortran;
 procedure RCGET(var J:integer; var X:VEC13; var U:VEC4;
            var T:real); fortran;
 procedure RCEGET(var J,K:integer; var T:real); fortran;
+(* оценка задания *)
+procedure SCCLR; fortran;
+procedure SCPUT(var U:VEC4); fortran;
+procedure SCCALC(var X:VEC13); fortran;
+procedure SCGET(var RV,RT,RY,SS,UP,PP,TT:real; var IS:integer); fortran;
+procedure SCWPAR(var WV,WT,WG,WU,WP,PL:real); fortran;
 procedure PRVIN; fortran;
 procedure JUDG(var X:VEC13); fortran;
 (* аксессоры GLACC *)
@@ -137,7 +145,7 @@ end;
 procedure INIT;
 begin
   GLFCLR;
-  RECCLR;
+  RECCLR; SCCLR;
   MANUAL:=false; DE:=0.0; DA:=0.0; DR:=0.0; DTZ:=DT0;
   DTSH:=H; TAU:=1.0; ZERO:=0.0;
   GLSET(ZERO,DTSH,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX);
@@ -168,6 +176,7 @@ begin
     U[1]:=DE; U[2]:=DA; U[3]:=DR; U[4]:=DTZ
   end
   else if MODE=1 then GLAUTO(X,U) else PROGC(T,U);
+  SCPUT(U);
   TURB;
   if ICTRL>=2 then
   begin
@@ -230,6 +239,19 @@ begin
   writeln(' KURS LUCH |----*----| Y=',X[12]:7:1,' M');
   writeln(' SKOR=',VA:6:1,' VERT=',X[2]:6:2,
           ' ATAKA=',ALF:5:1,' TYAG=',100*U[4]:3:0)
+end;
+(************************************************************)
+procedure PRTSCR;
+begin
+  SCGET(SCVERT,SCTOCH,SCY,SCSKO,SCUPR,SCPLAV,SCTOT,SCZACH);
+  SCWPAR(SCW1,SCW2,SCW3,SCW4,SCW5,SCW6);
+  writeln('ОЦЕНКА ЗАДАНИЯ=',SCTOT:7:3,' ЗАЧЕТ=',SCZACH:1);
+  writeln(' ВЕРТ=',SCVERT:7:2,' ТОЧКА=',SCTOCH:7:0,
+          ' ОТ ОСИ=',SCY:7:1);
+  writeln(' СКО=',SCSKO:7:2,' ПЕРЕУПРАВЛЕНИЕ=',SCUPR:8:3);
+  writeln(' НЕПЛАВНОСТЬ=',SCPLAV:8:3);
+  writeln(' ВЕСА=',SCW1:5:2,SCW2:5:2,SCW3:5:2,SCW4:5:2,SCW5:5:2,
+          ' ПОРОГ=',SCW6:5:2)
 end;
 (************************************************************)
 procedure PLYREC;
@@ -326,6 +348,7 @@ begin
           if DTZ<0.0 then DTZ:=0.0; writeln('DTZ=',DTZ:6:3) end;
         CMD='INJ   ': begin ASK; GTINT(IFLT,OK); GLFINJ(IFLT,U);
           RCEVT(IFLT,T); writeln('FAULT=',IFLT:1,' INJECTED') end;
+        CMD='SCR   ': begin PRTSCR; PAUS:=true end;
         CMD='REC   ': begin RECCLR; RECON:=true;
           writeln('REC ON NSTEP=',NSTEP:1) end;
         CMD='RPL   ': begin RECON:=false; PLYREC end;
@@ -346,7 +369,7 @@ begin
       if (NSTP mod NPRN)=0 then PRFRM;
       if X[13]<=VHCR then
       begin
-        PRFRM; GLSC(SUME,NEGL); JUDG(X);
+        PRFRM; GLSC(SUME,NEGL); SCCALC(X); JUDG(X);
         AVY:=abs(X[2]); OCE:=4;
         if AVY<=4.0 then OCE:=3;
         if AVY<=2.5 then OCE:=2;

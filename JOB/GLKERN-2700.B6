@@ -283,6 +283,117 @@ C==============================================================
       T=IEV(2,J)
       END
 C==============================================================
+C     ГЛИССАДА-6. ОЦЕНКА ВЫПОЛНЕНИЯ ЗАДАНИЯ.
+C     ВСЕ КОРРЕКТИРУЕМЫЕ ВЕЛИЧИНЫ - В ОТДЕЛЬНОМ БЛОКЕ /SCPAR/:
+C       VY1,VY2,VY3 - ПОРОГИ ВЕРТИКАЛЬНОЙ СКОРОСТИ ПОСАДКИ,
+C       DTLIM - ПРЕДЕЛ ОТКЛОНЕНИЯ ТОЧКИ КАСАНИЯ, М,
+C       YLIM  - ПРЕДЕЛ СМЕЩЕНИЯ ОТ ОСИ, М,
+C       GLIM  - ПРЕДЕЛ СКО ОТ ГЛИССАДЫ, М,
+C       OVLIM - ПРЕДЕЛ ПЕРЕУПРАВЛЕНИЯ (СУММА |DU|), РАД,
+C       SMLIM - ПРЕДЕЛ НЕПЛАВНОСТИ (СУММА |D2U|), РАД,
+C       WVERT,WTOCH,WGLIS,WUPR,WPLAV - ВЕСА КОМПОНЕНТ,
+C       PLIM  - ПОРОГ ЗАЧЕТА.
+C     /SCORE/ - РЕЗУЛЬТАТ: RVERT,RTOCH,RY,SKO,UPR,PLAV,TOT,ISCR,NKAD.
+C     /OLDU/ - ДВА ПРЕДЫДУЩИХ ЗНАЧЕНИЯ УПРАВЛЕНИЯ.
+C     ИМЯ БУФЕРОВ НЕ ПРЕВЫШАЕТ 6 ЛИТЕР (ТРЕБОВАНИЕ ФОРЭКС).
+C==============================================================
+      BLOCK DATA SCPBLK
+      COMMON /SCPAR/ VY1,VY2,VY3,DTLIM,YLIM,GLIM,OVLIM,SMLIM,
+     1WVERT,WTOCH,WGLIS,WUPR,WPLAV,PLIM
+      COMMON /SCORE/ RVERT,RTOCH,RY,SKO,UPR,PLAV,TOT,ISCR,NKAD
+      COMMON /OLDU/ UPREV(4),UPREV2(4),IFIRST
+      DATA VY1/1.5/,VY2/2.5/,VY3/4.0/,DTLIM/3000./,YLIM/50./,
+     1GLIM/50./,OVLIM/20./,SMLIM/4./,WVERT/0.30/,WTOCH/0.15/,
+     2WGLIS/0.25/,WUPR/0.15/,WPLAV/0.15/,PLIM/0.60/
+      DATA RVERT/0./,RTOCH/0./,RY/0./,SKO/0./,UPR/0./,PLAV/0./,
+     1TOT/0./,ISCR/0/,NKAD/0/,IFIRST/0/
+      END
+      SUBROUTINE SCCLR
+      COMMON /SCORE/ RVERT,RTOCH,RY,SKO,UPR,PLAV,TOT,ISCR,NKAD
+      COMMON /OLDU/ UPREV(4),UPREV2(4),IFIRST
+      RVERT=0.
+      RTOCH=0.
+      RY=0.
+      SKO=0.
+      UPR=0.
+      PLAV=0.
+      TOT=0.
+      ISCR=0
+      NKAD=0
+      IFIRST=0
+      END
+      SUBROUTINE SCPUT(U)
+      DIMENSION U(4)
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /SCORE/ RVERT,RTOCH,RY,SKO,UPR,PLAV,TOT,ISCR,NKAD
+      COMMON /OLDU/ UPREV(4),UPREV2(4),IFIRST
+      IF(IFIRST.NE.0) GO TO 15
+      DO 10 I=1,4
+   10 UPREV2(I)=U(I)
+      DO 11 I=1,4
+   11 UPREV(I)=U(I)
+      IFIRST=1
+      GO TO 30
+   15 CONTINUE
+      DO 20 I=1,4
+        UPR=UPR+ABS(U(I)-UPREV(I))
+        PLAV=PLAV+ABS(U(I)-2.*UPREV(I)+UPREV2(I))
+        UPREV2(I)=UPREV(I)
+        UPREV(I)=U(I)
+   20 CONTINUE
+   30 NKAD=NKAD+1
+      END
+      SUBROUTINE SCCALC(X)
+      DIMENSION X(13)
+      COMMON /SCPAR/ VY1,VY2,VY3,DTLIM,YLIM,GLIM,OVLIM,SMLIM,
+     1WVERT,WTOCH,WGLIS,WUPR,WPLAV,PLIM
+      COMMON /SCORE/ RVERT,RTOCH,RY,SKO,UPR,PLAV,TOT,ISCR,NKAD
+      COMMON /SCHET/ SUME,NEGL
+      RVERT=ABS(X(2))
+      RTOCH=X(11)
+      RY=ABS(X(12))
+      SKO=0.
+      IF(NEGL.GT.0) SKO=SQRT(SUME/FLOAT(NEGL))
+      QV=1.
+      IF(RVERT.GT.VY1) QV=1.-(RVERT-VY1)/(VY2-VY1)
+      IF(RVERT.GT.VY2) QV=(VY3-RVERT)/(VY3-VY2)
+      QT=1.-ABS(RTOCH)/(2.*DTLIM)
+      QY=1.-RY/(2.*YLIM)
+      QG=1.-SKO/GLIM
+      QO=1.-UPR/OVLIM
+      QM=1.-PLAV/SMLIM
+      IF(QV.LT.0.) QV=0.
+      IF(QT.LT.0.) QT=0.
+      IF(QY.LT.0.) QY=0.
+      IF(QG.LT.0.) QG=0.
+      IF(QO.LT.0.) QO=0.
+      IF(QM.LT.0.) QM=0.
+      TOT=WVERT*QV+WTOCH*QT+WGLIS*QG+WUPR*QO+WPLAV*QM
+      ISCR=0
+      IF(TOT.GE.PLIM .AND. RVERT.LE.VY3) ISCR=1
+      END
+      SUBROUTINE SCGET(RV,RT,RYO,SS,UU,PP,TT,IS)
+      COMMON /SCORE/ RVERT,RTOCH,RY,SKO,UPR,PLAV,TOT,ISCR,NKAD
+      RV=RVERT
+      RT=RTOCH
+      RYO=RY
+      SS=SKO
+      UU=UPR
+      PP=PLAV
+      TT=TOT
+      IS=ISCR
+      END
+      SUBROUTINE SCWPAR(WV,WT,WG,WU,WP,PL)
+      COMMON /SCPAR/ VY1,VY2,VY3,DTLIM,YLIM,GLIM,OVLIM,SMLIM,
+     1WVERT,WTOCH,WGLIS,WUPR,WPLAV,PLIM
+      WV=WVERT
+      WT=WTOCH
+      WG=WGLIS
+      WU=WUPR
+      WP=WPLAV
+      PL=PLIM
+      END
+C==============================================================
 C     ГЛИССАДА-6. ИНИЦИАЛИЗАЦИЯ ТИПА САМОЛЕТА.
 C     ВСЕ ЧИСЛОВЫЕ ТТХ ВЫНЕСЕНЫ В SRC/GLTTX.FTN, БЛОК /TTXDAT/.
 C     ПРАВКИ ТТХ ДЕЛАТЬ ТАМ, ЗДЕСЬ ТОЛЬКО ПЕРЕНОС В /SOST/.
