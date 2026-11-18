@@ -97,7 +97,7 @@ def run_game(sc, timeout=240):
                 n = text.count('WНАТ=')
                 if n > what:
                     for _ in range(n - what):
-                        os.write(master, b'\n')
+                        os.write(master, b'L0\n' if what == 0 else b'\n')
                     what = n
                 np = text.count('\n-\r')
                 while sent < len(answers) and np > sent:

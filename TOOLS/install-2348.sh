@@ -48,7 +48,7 @@ BESM6_PATH="$HOME/.besm6" "$BESTOOL" zero 2348 --start=1472 --length=8 >/dev/nul
 W=$(mktemp -d)
 trap 'rm -rf "$W"' EXIT
 cp "$JOB"/*.B6 "$W"/
-cp "$TOOLS/run_gldial_pty.py" "$W"/
+cp "$TOOLS/run_gldial_pty.py" "$TOOLS/run_deck_pty.py" "$W"/
 cd "$W"
 export BESM6_PATH="$HOME/.besm6:/usr/local/share/besm6"
 

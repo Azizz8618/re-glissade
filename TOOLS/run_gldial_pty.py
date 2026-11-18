@@ -68,7 +68,7 @@ while time.time() < deadline:
         nwhat = text.count('WНАТ=')
         if nwhat > what_sent:
             for _ in range(nwhat - what_sent):
-                os.write(master, b'\n')
+                os.write(master, b'L0\n' if what == 0 else b'\n')
             what_sent = nwhat
 
         nprompt = text.count('\n-\r')
