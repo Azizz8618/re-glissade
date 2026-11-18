@@ -17,7 +17,7 @@ var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     QN,VA,ALF,TH,GA,PS,VTHR,VHCR,ERMAX,ERR:real;
     KTIP,MODE,ICTRL,NFR,IFLIB,NPRN,NMAX,NSTP,NEGL,IPOS:integer;
     I,J,IH,JA,JG,IB,K,OCE:integer; OK,RUN,PAUS:boolean;
-    IMODE,IEX:integer;
+    IMODE,IEX,IFLT:integer;
     MANUAL:boolean; DE,DA,DR,DTZ:real;
     EXKTIP:array[1..5] of integer;
     EXSIGW,EXRSEED,EXDT0,EXTMAX:array[1..5] of real;
@@ -31,6 +31,8 @@ procedure GLAUTO(var X:VEC13; var U:VEC4); fortran;
 procedure PROGC(var T:real; var U:VEC4); fortran;
 procedure TURB; fortran;
 procedure KUTMER(var X:VEC13; var U:VEC4; var DT,ERR:real); fortran;
+procedure GLFINJ(var K:integer; var U:VEC4); fortran;
+procedure GLFCLR; fortran;
 procedure PRVIN; fortran;
 procedure JUDG(var X:VEC13); fortran;
 (* аксессоры GLACC *)
@@ -122,6 +124,7 @@ end;
 (************************************************************)
 procedure INIT;
 begin
+  GLFCLR;
   MANUAL:=false; DE:=0.0; DA:=0.0; DR:=0.0; DTZ:=DT0;
   DTSH:=H; TAU:=1.0; ZERO:=0.0;
   GLSET(ZERO,DTSH,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX);
@@ -283,6 +286,8 @@ begin
           if DTZ>1.0 then DTZ:=1.0; writeln('DTZ=',DTZ:6:3) end;
         CMD='TH-   ': begin MANUAL:=true; DTZ:=DTZ-0.05;
           if DTZ<0.0 then DTZ:=0.0; writeln('DTZ=',DTZ:6:3) end;
+        CMD='INJ   ': begin ASK; GTINT(IFLT,OK); GLFINJ(IFLT,U);
+          writeln('FAULT=',IFLT:1,' INJECTED') end;
         CMD='STA   ': begin RUN:=true; PAUS:=false end;
         CMD='STE   ': begin DOSTP; PRFRM; PAUS:=true end;
         CMD='STO   ': begin RUN:=false; PAUS:=true end;

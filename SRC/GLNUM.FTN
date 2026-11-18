@@ -46,9 +46,11 @@ C     DW/DT = -W/TAU + SIG*SQRT(2/TAU)*КСИ
       WGX=WGX+(-WGX/TAU)*DTSHAG+AK1*SBRND(1.)
       WGY=WGY+(-WGY/TAU)*DTSHAG+AK1*SBRND(1.)
       WGZ=WGZ+(-WGZ/TAU)*DTSHAG+AK1*SBRND(1.)
+      CALL FLTW(WGX,WGY,WGZ)
       RETURN
    20 WGX=0.
       WGY=0.
       WGZ=0.
+      CALL FLTW(WGX,WGY,WGZ)
       RETURN
       END

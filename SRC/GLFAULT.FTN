@@ -1,0 +1,42 @@
+C==============================================================
+C     ГЛИССАДА-6. МОДЕЛЬ ОТКАЗОВ ДЛЯ ИНСТРУКТОРСКОГО ПУЛЬТА.
+C     КОДЫ: 1 - ПОТЕРЯ ТЯГИ, 2 - ЗАКЛИНИВАНИЕ РУЛЯ ВЫСОТЫ,
+C     3 - ЗАКЛИНИВАНИЕ ЭЛЕРОНОВ, 4 - ЗАКЛИНИВАНИЕ РУЛЯ
+C     НАПРАВЛЕНИЯ, 5 - СДВИГ ВЕТРА. ИМЯ В /FAULT/ - IFALT.
+C==============================================================
+      BLOCK DATA GLFLTD
+      COMMON /FAULT/ IFALT,TINJ,DEJ,DAJ,DRJ
+      DATA IFALT/0/
+      END
+      SUBROUTINE GLFINJ(K,U)
+      DIMENSION U(4)
+      COMMON /FAULT/ IFALT,TINJ,DEJ,DAJ,DRJ
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      IFALT=K
+      TINJ=T
+      DEJ=U(1)
+      DAJ=U(2)
+      DRJ=U(3)
+      END
+      SUBROUTINE GLFCLR
+      COMMON /FAULT/ IFALT,TINJ,DEJ,DAJ,DRJ
+      IFALT=0
+      END
+      SUBROUTINE FLTU(U)
+      DIMENSION U(4)
+      COMMON /FAULT/ IFALT,TINJ,DEJ,DAJ,DRJ
+      IF(IFALT.EQ.2) U(1)=DEJ
+      IF(IFALT.EQ.3) U(2)=DAJ
+      IF(IFALT.EQ.4) U(3)=DRJ
+      END
+      SUBROUTINE FLTTH(TH)
+      COMMON /FAULT/ IFALT,TINJ,DEJ,DAJ,DRJ
+      IF(IFALT.EQ.1) TH=TH*0.30
+      END
+      SUBROUTINE FLTW(WGX,WGY,WGZ)
+      COMMON /FAULT/ IFALT,TINJ,DEJ,DAJ,DRJ
+      IF(IFALT.NE.5) GO TO 10
+      WGX=WGX+2.0
+      WGY=WGY+3.0
+   10 CONTINUE
+      END

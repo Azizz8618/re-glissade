@@ -121,7 +121,7 @@ C     (6 СТЕПЕНЕЙ СВОБОДЫ) И ДВИГАТЕЛИ.
 C     МОМЕНТЫ: WX-КРЕН, WY-РЫСКАНИЕ, WZ-ТАНГАЖ (ОСИ КОРПУСА).
 C==============================================================
       SUBROUTINE PROIZV(X,U,XD)
-      DIMENSION X(13),U(4),XD(13)
+      DIMENSION X(13),U(4),XD(13),UT(4)
       COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
       COMMON /TTXDAT/ TGM(5),TS(5),TBB(5),TCC(5),TCL0(5),TCLA(5),
      1TCLMX(5),TCD0(5),TAK(5),TCMA(5),TCM0(5),TCMDE(5),TCMQ(5),
@@ -161,6 +161,9 @@ C     ВОЗДУШНАЯ СКОРОСТЬ В ОСЯХ КОРПУСА (ЗЕМЛЯ
       BETA=ATAN2(VB3,SQRT(VB1*VB1+VB2*VB2))
 C     АТМОСФЕРА: ПЛОТНОСТЬ ПО ВЫСОТЕ (СБ ИЛИ МСА)
       CALL SBATM(X(13),TK,RHO)
+      DO 14 I=1,4
+   14 UT(I)=U(I)
+      CALL FLTU(UT)
       QBAR=0.5*RHO*VA*VA
 C     ПОДЪЕМНАЯ СИЛА: ЛИНЕЙНЫЙ УЧАСТОК, ЗАТЕМ СРЫВ
       CL=CL0+CLA*ALFA
@@ -186,9 +189,9 @@ C     СИЛЫ В ОСЯХ КОРПУСА: АЭРОДИНАМИКА, ТЯГА, �
 C     МОМЕНТЫ ОТНОСИТЕЛЬНО ОСЕЙ КОРПУСА
       PH=BB/(2.*VA)
       QH=CC/(2.*VA)
-      AMX=QBAR*S*BB*(CLB*BETA+CLDA*U(2)+CLP*X(8)*PH)
-      AMY=QBAR*S*BB*(CNB*BETA+CNDR*U(3)+CNR*X(9)*PH)
-      AMZ=QBAR*S*CC*(CM0+CMA*ALFA+CMDE*U(1)+CMQ*X(10)*QH)
+      AMX=QBAR*S*BB*(CLB*BETA+CLDA*UT(2)+CLP*X(8)*PH)
+      AMY=QBAR*S*BB*(CNB*BETA+CNDR*UT(3)+CNR*X(9)*PH)
+      AMZ=QBAR*S*CC*(CM0+CMA*ALFA+CMDE*UT(1)+CMQ*X(10)*QH)
       XD(8)=(AMX+(JY-JZ)*X(9)*X(10))/JX
       XD(9)=(AMY+(JZ-JX)*X(10)*X(8))/JY
       XD(10)=(AMZ+(JX-JY)*X(8)*X(9))/JZ
@@ -219,8 +222,10 @@ C     ДВИГАТЕЛИ: 1-ТРД, 2-ТВД. УПРОЩЕННЫЕ ДРОССЕ�
      1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
       IF(ETYPE.EQ.2.) GO TO 10
       TH=THMAX*(TTHI0(KTIP)+TTHI1(KTIP)*DTZ)*(1.0-TTHV(KTIP)*VA)
+      CALL FLTTH(TH)
       RETURN
    10 TH=DTZ*AMIN1(THMAX,TPROPE(KTIP)*PMAX/AMAX1(VA,TVAMIN))
+      CALL FLTTH(TH)
       RETURN
       END
 C==============================================================
@@ -320,10 +325,12 @@ C     DW/DT = -W/TAU + SIG*SQRT(2/TAU)*КСИ
       WGX=WGX+(-WGX/TAU)*DTSHAG+AK1*SBRND(1.)
       WGY=WGY+(-WGY/TAU)*DTSHAG+AK1*SBRND(1.)
       WGZ=WGZ+(-WGZ/TAU)*DTSHAG+AK1*SBRND(1.)
+      CALL FLTW(WGX,WGY,WGZ)
       RETURN
    20 WGX=0.
       WGY=0.
       WGZ=0.
+      CALL FLTW(WGX,WGY,WGZ)
       RETURN
       END
 C==============================================================
@@ -573,6 +580,48 @@ C     ОЦЕНКА МЕРСОНА: |2K1-9K3+8K4-K5|/30
       IF(E.GT.ERR) ERR=E
    60 CONTINUE
       RETURN
+      END
+C==============================================================
+C     ГЛИССАДА-6. МОДЕЛЬ ОТКАЗОВ ДЛЯ ИНСТРУКТОРСКОГО ПУЛЬТА.
+C     КОДЫ: 1 - ПОТЕРЯ ТЯГИ, 2 - ЗАКЛИНИВАНИЕ РУЛЯ ВЫСОТЫ,
+C     3 - ЗАКЛИНИВАНИЕ ЭЛЕРОНОВ, 4 - ЗАКЛИНИВАНИЕ РУЛЯ
+C     НАПРАВЛЕНИЯ, 5 - СДВИГ ВЕТРА. ИМЯ В /FAULT/ - IFALT.
+C==============================================================
+      BLOCK DATA GLFLTD
+      COMMON /FAULT/ IFALT,TINJ,DEJ,DAJ,DRJ
+      DATA IFALT/0/
+      END
+      SUBROUTINE GLFINJ(K,U)
+      DIMENSION U(4)
+      COMMON /FAULT/ IFALT,TINJ,DEJ,DAJ,DRJ
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      IFALT=K
+      TINJ=T
+      DEJ=U(1)
+      DAJ=U(2)
+      DRJ=U(3)
+      END
+      SUBROUTINE GLFCLR
+      COMMON /FAULT/ IFALT,TINJ,DEJ,DAJ,DRJ
+      IFALT=0
+      END
+      SUBROUTINE FLTU(U)
+      DIMENSION U(4)
+      COMMON /FAULT/ IFALT,TINJ,DEJ,DAJ,DRJ
+      IF(IFALT.EQ.2) U(1)=DEJ
+      IF(IFALT.EQ.3) U(2)=DAJ
+      IF(IFALT.EQ.4) U(3)=DRJ
+      END
+      SUBROUTINE FLTTH(TH)
+      COMMON /FAULT/ IFALT,TINJ,DEJ,DAJ,DRJ
+      IF(IFALT.EQ.1) TH=TH*0.30
+      END
+      SUBROUTINE FLTW(WGX,WGY,WGZ)
+      COMMON /FAULT/ IFALT,TINJ,DEJ,DAJ,DRJ
+      IF(IFALT.NE.5) GO TO 10
+      WGX=WGX+2.0
+      WGY=WGY+3.0
+   10 CONTINUE
       END
 *execute
     3    1    0    5    1
