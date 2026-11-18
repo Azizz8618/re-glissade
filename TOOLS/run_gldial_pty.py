@@ -96,5 +96,5 @@ except subprocess.TimeoutExpired:
     proc.kill()
     proc.wait()
 os.close(master)
-print('WHAT отвечено: %d, PASRED: %d/%d, код выхода: %s'
+print('Ответов на приглашение: %d, ответов PASRED: %d/%d, код завершения: %s'
       % (what_sent, sent, len(ANSWERS), proc.returncode))

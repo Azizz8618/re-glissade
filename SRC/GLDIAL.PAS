@@ -19,6 +19,8 @@ var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     I,J,IH,JA,JG,IB,K,OCE:integer; OK,RUN,PAUS:boolean;
     IMODE,IEX,IFLT:integer;
     MANUAL:boolean; DE,DA,DR,DTZ:real;
+    RECON:boolean; NFRMX,NEVMX,NSTEP,IEVK:integer;
+    RX:VEC13; RU:VEC4; RT:real;
     EXKTIP:array[1..5] of integer;
     EXSIGW,EXRSEED,EXDT0,EXTMAX:array[1..5] of real;
     pastel: array[0..25] of Bitset;
@@ -33,6 +35,16 @@ procedure TURB; fortran;
 procedure KUTMER(var X:VEC13; var U:VEC4; var DT,ERR:real); fortran;
 procedure GLFINJ(var K:integer; var U:VEC4); fortran;
 procedure GLFCLR; fortran;
+(* регистратор: параметры в /RECPAR/ *)
+procedure RCGPAR(var NF,NE,NS:integer); fortran;
+procedure RCSPAR(var NF,NE,NS:integer); fortran;
+procedure RECCLR; fortran;
+procedure RECPUT(var X:VEC13; var U:VEC4; var T:real); fortran;
+procedure RCEVT(var K:integer; var T:real); fortran;
+procedure RCN(var NF,NEV:integer); fortran;
+procedure RCGET(var J:integer; var X:VEC13; var U:VEC4;
+           var T:real); fortran;
+procedure RCEGET(var J,K:integer; var T:real); fortran;
 procedure PRVIN; fortran;
 procedure JUDG(var X:VEC13); fortran;
 (* аксессоры GLACC *)
@@ -125,6 +137,7 @@ end;
 procedure INIT;
 begin
   GLFCLR;
+  RECCLR;
   MANUAL:=false; DE:=0.0; DA:=0.0; DR:=0.0; DTZ:=DT0;
   DTSH:=H; TAU:=1.0; ZERO:=0.0;
   GLSET(ZERO,DTSH,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX);
@@ -174,7 +187,8 @@ begin
   X[4]:=X[4]/QN; X[5]:=X[5]/QN; X[6]:=X[6]/QN; X[7]:=X[7]/QN;
   EGLI:=X[13]+0.05241*X[11];
   SUME:=SUME+EGLI*EGLI; NEGL:=NEGL+1;
-  NSTP:=NSTP+1
+  NSTP:=NSTP+1;
+  if RECON and (NSTP mod NSTEP=0) then RECPUT(X,U,T)
 end;
 (************************************************************)
 procedure PRFRM;
@@ -218,6 +232,29 @@ begin
           ' ATAKA=',ALF:5:1,' TYAG=',100*U[4]:3:0)
 end;
 (************************************************************)
+procedure PLYREC;
+var J,NF,NEV,KEV:integer; TEV:real;
+begin
+  RCN(NF,NEV);
+  writeln('FRAMES=',NF:1,' EVENTS=',NEV:1,' NSTEP=',NSTEP:1);
+  for J:=1 to NF do
+  begin
+    RCGET(J,RX,RU,RT);
+    writeln('TELE',J:4,' T=',RT:9:2);
+    writeln('  X=',RX[1]:11:4,RX[2]:11:4,RX[3]:11:4,
+            RX[4]:11:5,RX[5]:11:5);
+    writeln('     ',RX[6]:11:5,RX[7]:11:5,RX[8]:11:5,
+            RX[9]:11:5,RX[10]:11:5);
+    writeln('     ',RX[11]:11:2,RX[12]:11:3,RX[13]:11:3);
+    writeln('  U=',RU[1]:11:5,RU[2]:11:5,RU[3]:11:5,RU[4]:11:5)
+  end;
+  for J:=1 to NEV do
+  begin
+    RCEGET(J,KEV,TEV);
+    writeln('EV  ',J:4,' K=',KEV:1,' T=',TEV:9:2)
+  end
+end;
+(************************************************************)
 procedure CMDLOOP(var CMD:alfa);
 begin
   if IMODE=0 then
@@ -226,12 +263,13 @@ begin
     writeln('MAN: EV+ EV- AI+ AI- RU+ RU- TH+ TH-')
   end
   else
-    writeln('INS: SEL/FRZ/UNF/INJ/REC/PLY/SCR/HLP/PIL');
+    writeln('INS: SEL/FRZ/UNF/INJ/REC/RPL/RST/SCR/HLP/PIL');
   ASK; GTALF(CMD)
 end;
 (************************************************************)
 begin
   PASTEL[3]:=[48];
+  RCGPAR(NFRMX,NEVMX,NSTEP);
   IMODE:=0; IEX:=1;
   EXKTIP[1]:=3; EXSIGW[1]:=0.0; EXRSEED[1]:=7351.0;
   EXDT0[1]:=0.60; EXTMAX[1]:=2400.0;
@@ -253,10 +291,10 @@ begin
       select
         CMD='PIL   ': begin IMODE:=0; PAUS:=true end;
         CMD='INS   ': begin IMODE:=1; PAUS:=true end;
-        CMD='FRZ   ': begin writeln('FREEZE');
+        CMD='FRZ   ': begin writeln('FREEZE'); IEVK:=10; RCEVT(IEVK,T);
           RUN:=false; PAUS:=true end;
         CMD='UNF   ': begin writeln('UNFREEZE');
-          RUN:=true; PAUS:=false end;
+          IEVK:=11; RCEVT(IEVK,T); RUN:=true; PAUS:=false end;
         CMD='SEL   ': begin ASK; GTINT(IEX,OK);
           if (IEX>=1) and (IEX<=5) then
           begin
@@ -268,7 +306,7 @@ begin
           PAUS:=true end;
         CMD='HLP   ': if IMODE=0 then
           writeln('PIL: STA STE STO PAR PRN AUTO INS EXIT')
-          else writeln('INS: SEL FRZ UNF INJ REC PLY SCR HLP PIL');
+          else writeln('INS: SEL FRZ UNF INJ REC RPL RST SCR HLP PIL');
         CMD='AUTO  ': begin MANUAL:=false; writeln('AUTO PILOT') end;
         CMD='EV+   ': begin MANUAL:=true; DE:=DE+0.05;
           if DE>0.30 then DE:=0.30; writeln('DE=',DE:6:3) end;
@@ -287,7 +325,12 @@ begin
         CMD='TH-   ': begin MANUAL:=true; DTZ:=DTZ-0.05;
           if DTZ<0.0 then DTZ:=0.0; writeln('DTZ=',DTZ:6:3) end;
         CMD='INJ   ': begin ASK; GTINT(IFLT,OK); GLFINJ(IFLT,U);
-          writeln('FAULT=',IFLT:1,' INJECTED') end;
+          RCEVT(IFLT,T); writeln('FAULT=',IFLT:1,' INJECTED') end;
+        CMD='REC   ': begin RECCLR; RECON:=true;
+          writeln('REC ON NSTEP=',NSTEP:1) end;
+        CMD='RPL   ': begin RECON:=false; PLYREC end;
+        CMD='RST   ': begin RECCLR; RECON:=false;
+          writeln('REC CLEAR') end;
         CMD='STA   ': begin RUN:=true; PAUS:=false end;
         CMD='STE   ': begin DOSTP; PRFRM; PAUS:=true end;
         CMD='STO   ': begin RUN:=false; PAUS:=true end;

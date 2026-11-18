@@ -196,6 +196,93 @@ C==============================================================
    10 CONTINUE
       END
 C==============================================================
+C     ГЛИССАДА-6. РЕГИСТРАТОР ТРАЕКТОРИИ И СОБЫТИЙ.
+C     ИЗМЕНЯЕМЫЕ ПАРАМЕТРЫ - В ОТДЕЛЬНОМ БЛОКЕ /RECPAR/,
+C     НЕ В ТЕЛЕ ПОДПРОГРАММ:
+C       NFMAX - ЛОГИЧЕСКИЙ ЛИМИТ КАДРОВ,
+C       NEMAX - ЛОГИЧЕСКИЙ ЛИМИТ СОБЫТИЙ,
+C       NSTEP - ШАГ ЗАПИСИ В ШАГАХ ИНТЕГРИРОВАНИЯ.
+C     ФИЗИЧЕСКАЯ ЕМКОСТЬ БУФЕРОВ - ОДНА КОНСТАНТА 100 И 40,
+C     УКАЗАНА ТОЛЬКО В ОБЪЯВЛЕНИЯХ И НЕ ИСПОЛЬЗУЕТСЯ В ЛОГИКЕ.
+C     /RECF/ - КАДРЫ: NR, RBUF(18,100) = X(13),U(4),T.
+C     /RECE/ - СОБЫТИЯ: NE, IEV(2,40) = КОД,ВРЕМЯ ВВОДА.
+C     ИМЯ БУФЕРОВ RBUF И IEV - НЕ БОЛЕЕ 6 ЛИТЕР.
+C     АКСЕССОРЫ: RCGPAR,RCSPAR,RECCLR,RECPUT,RCEVT,RCN,RCGET,RCEGET.
+C==============================================================
+      BLOCK DATA RCFBLK
+      COMMON /RECPAR/ NFMAX,NEMAX,NSTEP
+      COMMON /RECF/ NR,RBUF
+      COMMON /RECE/ NE,IEV
+      DIMENSION RBUF(18,100),IEV(2,40)
+      DATA NFMAX/100/,NEMAX/40/,NSTEP/50/,NR/0/,NE/0/
+      END
+      SUBROUTINE RCGPAR(NF,NE,NS)
+      COMMON /RECPAR/ NFMAX,NEMAX,NSTEP
+      NF=NFMAX
+      NE=NEMAX
+      NS=NSTEP
+      END
+      SUBROUTINE RCSPAR(NF,NE,NS)
+      COMMON /RECPAR/ NFMAX,NEMAX,NSTEP
+      NFMAX=NF
+      NEMAX=NE
+      NSTEP=NS
+      END
+      SUBROUTINE RECCLR
+      COMMON /RECF/ NR,RBUF
+      COMMON /RECE/ NE,IEV
+      DIMENSION RBUF(18,100),IEV(2,40)
+      NR=0
+      NE=0
+      END
+      SUBROUTINE RECPUT(X,U,T)
+      DIMENSION X(13),U(4)
+      COMMON /RECPAR/ NFMAX,NEMAX,NSTEP
+      COMMON /RECF/ NR,RBUF
+      DIMENSION RBUF(18,100)
+      IF(NR.GE.NFMAX) GO TO 10
+      NR=NR+1
+      DO 20 I=1,13
+   20 RBUF(I,NR)=X(I)
+      DO 30 I=1,4
+   30 RBUF(13+I,NR)=U(I)
+      RBUF(18,NR)=T
+   10 CONTINUE
+      END
+      SUBROUTINE RCEVT(K,T)
+      COMMON /RECPAR/ NFMAX,NEMAX,NSTEP
+      COMMON /RECE/ NE,IEV
+      DIMENSION IEV(2,40)
+      IF(NE.GE.NEMAX) GO TO 10
+      NE=NE+1
+      IEV(1,NE)=K
+      IEV(2,NE)=T
+   10 CONTINUE
+      END
+      SUBROUTINE RCN(NF,NEV)
+      COMMON /RECF/ NR,RBUF
+      COMMON /RECE/ NE,IEV
+      DIMENSION RBUF(18,100),IEV(2,40)
+      NF=NR
+      NEV=NE
+      END
+      SUBROUTINE RCGET(J,X,U,T)
+      DIMENSION X(13),U(4)
+      COMMON /RECF/ NR,RBUF
+      DIMENSION RBUF(18,100)
+      DO 20 I=1,13
+   20 X(I)=RBUF(I,J)
+      DO 30 I=1,4
+   30 U(I)=RBUF(13+I,J)
+      T=RBUF(18,J)
+      END
+      SUBROUTINE RCEGET(J,K,T)
+      COMMON /RECE/ NE,IEV
+      DIMENSION IEV(2,40)
+      K=IEV(1,J)
+      T=IEV(2,J)
+      END
+C==============================================================
 C     ГЛИССАДА-6. ИНИЦИАЛИЗАЦИЯ ТИПА САМОЛЕТА.
 C     ВСЕ ЧИСЛОВЫЕ ТТХ ВЫНЕСЕНЫ В SRC/GLTTX.FTN, БЛОК /TTXDAT/.
 C     ПРАВКИ ТТХ ДЕЛАТЬ ТАМ, ЗДЕСЬ ТОЛЬКО ПЕРЕНОС В /SOST/.
