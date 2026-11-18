@@ -43,13 +43,12 @@ Fortran-ядро из PERSO. В колоде перфокарт всё дела�
 Ядро и оболочка уже записаны в `~/.besm6/2348`, зона `2700(8)`. Вызов:
 
 ```bash
-cd /tmp
-cp ~/Yandex.Disk/re-glissade/JOB/GLCALL-2700.B6 .
-cp ~/Yandex.Disk/re-glissade/TOOLS/run_gldial_pty.py .
-BESM6_PATH=$HOME/.besm6:/usr/local/share/besm6 \
-PATH=/home/azizz/Yandex.Disk/rezerv/build/dispak:$PATH \
-  python3 run_gldial_pty.py GLCALL-2700.B6 240
+cd ~/Yandex.Disk/re-glissade
+python3 TOOLS/play.py          # ручная игра: ответы вводятся с клавиатуры
 ```
+
+Для пакетного прогона с заранее заданными ответами используется
+`TOOLS/run_gldial_pty.py` (колода `JOB/GLCALL-2700.B6`, карта `ТЕЛЕ^`).
 
 `WHAT=` — приглашение видеотона, обвязка отвечает на него переводом
 строки. Приглашение Pascal — одиночная литера `-`; ответ вводится после

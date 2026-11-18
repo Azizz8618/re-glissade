@@ -111,8 +111,9 @@ re-glissade/
 ```bash
 cd ~/Yandex.Disk/re-glissade
 sh TOOLS/install-2348.sh 1
-python3 TOOLS/calib/verify_all.py 1.5
-python3 TOOLS/calib/scenarios.py verify
+python3 TOOLS/play.py          # ручная игра в режиме ТЕЛЕ
+python3 TOOLS/calib/verify_all.py 1.5   # пакетная проверка
+python3 TOOLS/calib/scenarios.py verify # исторические сценарии
 ```
 
 Ядро и оболочка записываются в `~/.besm6/2348`, зона `2700(8)`. Диск
