@@ -17,6 +17,7 @@ var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     QN,VA,ALF,TH,GA,PS,VTHR,VHCR,ERMAX,ERR:real;
     EPSKM,HNEW,KMHMIN,KMHMAX,KMSF,KMEXP,PFL:real; KMTRY:integer;
     TCTRL,DTCTRL:real; UHOLD:VEC4;
+    DTCV,DTB,DTN,DTX,DTD,DTU:real;
     KTIP,MODE,ICTRL,NFR,IFLIB,NPRN,NMAX,NSTP,NEGL,IPOS:integer;
     I,J,IH,JA,JG,IB,K,OCE:integer; OK,RUN,PAUS:boolean;
     IMODE,IEX,IFLT:integer;
@@ -49,6 +50,8 @@ procedure KMPAR(var EPS,HMN,HMX,SF:real;
 procedure KMPAR2(var PF:real); fortran;
 procedure KMSET(var EPS:real); fortran;
 procedure KMSETP(var PF:real); fortran;
+procedure DTPAR(var DTB,DTN,DTX,DTD,DTU:real); fortran;
+procedure DTADJ(var ERR,DT:real); fortran;
 procedure GLFINJ(var K:integer; var U:VEC4); fortran;
 procedure GLFCLR; fortran;
 (* регистратор: параметры в /RECPAR/ *)
@@ -196,10 +199,11 @@ begin
 end;
 (************************************************************)
 procedure DOSTP;
-var I,IFAIL:integer; ZGL:real;
+var I,IFAIL:integer; ZGL:real; RECTRL:boolean;
 begin
   XP:=X[11]; YP:=X[12]; HP:=X[13];
-  if ICTRL<>3 then
+  RECTRL:=false;
+  if (ICTRL<>3) and (ICTRL<>4) then
   begin
     T:=T+DTSH;
     GLSET(T,DTSH,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX);
@@ -219,7 +223,8 @@ begin
       end
       else if MODE=1 then GLAUTO(X,U) else PROGC(T,U);
       for I:=1 to 4 do UHOLD[I]:=U[I];
-      TCTRL:=T+DTCTRL
+      TCTRL:=T+DTCTRL;
+      if ICTRL=4 then RECTRL:=true
     end
     else for I:=1 to 4 do U[I]:=UHOLD[I]
   end;
@@ -237,10 +242,16 @@ begin
   end
   else
   begin
+    if ICTRL=4 then
+    begin
+      T:=T+DTSH;
+      GLSET(T,DTSH,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX)
+    end;
     if ICTRL>=2 then
     begin
       KUTMER(X,U,DTSH,ERR);
-      if ERR>ERMAX then ERMAX:=ERR
+      if ERR>ERMAX then ERMAX:=ERR;
+      if RECTRL then DTADJ(ERR,DTCTRL)
     end;
     PROIZV(X,U,VK1);
     for I:=1 to 13 do VX1[I]:=X[I]+0.5*DTSH*VK1[I];
@@ -489,6 +500,12 @@ begin
           writeln('PFL=',PFL:10:3) end;
         CMD='EPS   ': begin ASK; GTRL(EPSKM,OK); KMSET(EPSKM);
           writeln('EPS=',EPSKM:10:3) end;
+        CMD='DTC   ': begin ASK; GTRL(DTCV,OK);
+          DTPAR(DTB,DTN,DTX,DTD,DTU);
+          if DTCV<DTN then DTCV:=DTN;
+          if DTCV>DTX then DTCV:=DTX;
+          DTCTRL:=DTCV;
+          writeln('DTC=',DTCTRL:8:3) end;
         CMD='HLP   ': if IMODE=0 then
           writeln('PIL: STA STE STO PAR PRN AUTO INS EXIT')
           else
@@ -559,6 +576,7 @@ begin
         if ICTRL>=2 then
           writeln('KONTROL ERMAX=',ERMAX:10:4);
           if ICTRL=3 then writeln('DTSH=',DTSH:8:4);
+          if ICTRL=4 then writeln('DTCTRL=',DTCTRL:8:4);
         RUN:=false; PAUS:=true
       end;
       if X[13] < -100.0 then
@@ -568,6 +586,7 @@ begin
             if ICTRL>=2 then
           writeln('KONTROL ERMAX=',ERMAX:10:4);
           if ICTRL=3 then writeln('DTSH=',DTSH:8:4);
+          if ICTRL=4 then writeln('DTCTRL=',DTCTRL:8:4);
             RUN:=false; PAUS:=true end;
       if (not PAUS) and (NSTP mod NPRN=0) and (ICTRL=1)
       then CMDLOOP(CMD)
