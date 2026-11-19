@@ -18,6 +18,8 @@ C==============================================================
       COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
       COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
 C     МАТРИЦА КОСИНУСОВ КОРПУС->ЗЕМЛЯ
+C     ЭФФЕКТИВНЫЕ КОЭФФИЦИЕНТЫ ПО ТЕКУЩЕЙ КОНФИГУРАЦИИ.
+      CALL CFUPD
       Q0=X(4)
       Q1=X(5)
       Q2=X(6)

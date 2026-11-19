@@ -73,6 +73,90 @@ C==============================================================
       DATA TFW /0.2, 0.2, 0.2, 0.2, 0.2/
       END
 C==============================================================
+C     ГЛИССАДА-6. КОНФИГУРАЦИЯ САМОЛЕТА В ПОЛЕТЕ.
+C     /CONFG/ - ПЕРЕКЛЮЧАТЕЛИ: ЗАКРЫЛКИ, ШАССИ, СПОЙЛЕРЫ.
+C     /CFDEL/ - ПРИРАЩЕНИЯ К БАЗОВЫМ КОЭФФИЦИЕНТАМ /TTXDAT/.
+C     ПОРЯДОК ТИПОВ: 1-МИГ-15, 2-ИЛ-28, 3-ТУ-104, 4-АН-24,
+C                   5-АН-2.
+C     КОНФИГУРАЦИЯ 0 - БАЗА ЭТАЛОННЫХ ПРОГОНОВ, ПРИРАЩЕНИЙ НЕТ.
+C     КОНФИГУРАЦИИ 1 И 2 - ВЗЛЕТНАЯ И ПОСАДОЧНАЯ.
+C     ЧИСЛА - ПО СВОДКЕ DOCS/ANALYSIS/KONFIGURACIYA-SVOD.MD, §3.
+C==============================================================
+      BLOCK DATA GLCONF
+      COMMON /CONFG/ IFLAP,IGEAR,ISPOI
+      COMMON /CFDEL/ DL0(5,2),DLMX(5,2),DD0(5,2),DCM0(5,2),
+     1DCLA(5,2),DG0(5)
+      DATA IFLAP/0/, IGEAR/0/, ISPOI/0/
+C     ДЛЯ КОНФИГУРАЦИИ 1 У АН-24 И АН-2 ДАННЫХ НЕТ - НУЛИ.
+      DATA DL0 /0.10, 0.15, 0.30, 0.00, 0.00,
+     1          0.55, 0.45, 0.50, 1.50, 0.64/
+      DATA DLMX /0.00, 0.10, 0.35, 0.00, 0.00,
+     1          0.00, 0.25, 0.65, 0.97, 0.00/
+      DATA DD0 /0.010, 0.012, 0.035, 0.000, 0.000,
+     1         0.045, 0.055, 0.085, 0.075, 0.038/
+      DATA DCM0 /0.01, -0.01, -0.03, 0.00, 0.00,
+     1          0.06, -0.04, -0.07, -0.05, 0.03/
+      DATA DCLA /0.00, 0.00, -0.10, 0.00, 0.00,
+     1         -0.30, -0.20, -0.20, 0.00, -1.00/
+C     ВКЛАД ШАССИ В CD0. У АН-2 ШАССИ НЕУБИРАЮЩЕЕСЯ.
+      DATA DG0 /0.010, 0.010, 0.010, 0.010, 0.000/
+      END
+C==============================================================
+C     ПЕРЕСЧЕТ ЭФФЕКТИВНЫХ КОЭФФИЦИЕНТОВ ИЗ БАЗЫ И ПРИРАЩЕНИЙ.
+C     ВЫЗЫВАЕТСЯ В НАЧАЛЕ PROIZV. ПОВТОРНЫЙ ВЫЗОВ НЕ НАКАПЛИВАЕТ
+C     ПРИРАЩЕНИЯ: БАЗА КАЖДЫЙ РАЗ БЕРЕТСЯ ИЗ /TTXDAT/.
+C==============================================================
+      SUBROUTINE CFUPD
+      COMMON /TTXDAT/ TGM(5),TS(5),TBB(5),TCC(5),TCL0(5),TCLA(5),
+     1TCLMX(5),TCD0(5),TAK(5),TCMA(5),TCM0(5),TCMDE(5),TCMQ(5),
+     1TCLB(5),TCLDA(5),TCLP(5),TCNB(5),TCNDR(5),TCNR(5),TCYB(5),
+     1TETYPE(5),TTHMAX(5),TPMAX(5),TVTHR(5),THCR(5),TJX(5),TJY(5),
+     1TJZ(5),TALFS(5),TCLS(5),TTHI0(5),TTHI1(5),TTHV(5),TPROPE(5),
+     1TVAMIN
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
+      COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
+     1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
+      COMMON /CONFG/ IFLAP,IGEAR,ISPOI
+      COMMON /CFDEL/ DL0(5,2),DLMX(5,2),DD0(5,2),DCM0(5,2),
+     1DCLA(5,2),DG0(5)
+C     СНАЧАЛА ТОЧНАЯ БАЗА - ЭТО ГАРАНТИЯ НЕЙТРАЛЬНОСТИ КОНФ. 0.
+      CL0=TCL0(KTIP)
+      CLA=TCLA(KTIP)
+      CLMX=TCLMX(KTIP)
+      CD0=TCD0(KTIP)
+      CM0=TCM0(KTIP)
+      IF(IFLAP.EQ.0) GO TO 10
+      CL0=CL0+DL0(KTIP,IFLAP)
+      CLA=CLA+DCLA(KTIP,IFLAP)
+      CLMX=CLMX+DLMX(KTIP,IFLAP)
+      CD0=CD0+DD0(KTIP,IFLAP)
+      CM0=CM0+DCM0(KTIP,IFLAP)
+   10 IF(IGEAR.EQ.0) GO TO 20
+      CD0=CD0+DG0(KTIP)
+   20 IF(ISPOI.EQ.0) GO TO 30
+C     СПОЙЛЕРЫ: ОЦЕНКА [О], СМ. GAP В ОТЧЕТЕ.
+      CL0=CL0-0.3
+      CD0=CD0+0.02
+   30 RETURN
+      END
+C==============================================================
+C     ЗАПИСЬ И ЧТЕНИЕ ПЕРЕКЛЮЧАТЕЛЕЙ ИЗ ПАСКАЛЯ.
+C==============================================================
+      SUBROUTINE CFSET(IFL,IGR,ISP)
+      COMMON /CONFG/ IFLAP,IGEAR,ISPOI
+      IFLAP=IFL
+      IGEAR=IGR
+      ISPOI=ISP
+      RETURN
+      END
+      SUBROUTINE CFGET(IFL,IGR,ISP)
+      COMMON /CONFG/ IFLAP,IGEAR,ISPOI
+      IFL=IFLAP
+      IGR=IGEAR
+      ISP=ISPOI
+      RETURN
+      END
+C==============================================================
 C     ГЛИССАДА-6. БЛОК УСИЛЕНИЙ АВТОПИЛОТА ПО ПОГОДЕ.
 C     ГЕНЕРИРУЕТСЯ: TOOLS/CALIB/WRITE_GLGAIN.PY.
 C     НЕ ПРАВИТЬ ВРУЧНУЮ - ПРАВИТЬ TOOLS/CALIB/LEVELS/*.JSON.
@@ -634,6 +718,8 @@ C==============================================================
       COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
       COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
 C     МАТРИЦА КОСИНУСОВ КОРПУС->ЗЕМЛЯ
+C     ЭФФЕКТИВНЫЕ КОЭФФИЦИЕНТЫ ПО ТЕКУЩЕЙ КОНФИГУРАЦИИ.
+      CALL CFUPD
       Q0=X(4)
       Q1=X(5)
       Q2=X(6)

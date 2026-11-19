@@ -32,6 +32,7 @@ VAR X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     KTIP,MODE,ICTRL,NFR,IFLIB,NPRN,NMAX,NSTP,NEGL,IPOS:INTEGER;
     I,J,IH,JA,JG,IB,K,OCE:INTEGER; OK,RUN,PAUS:BOOLEAN;
     IMODE,IEX,IFLT:INTEGER;
+    IFL,IGR,ISP:INTEGER; (* ЗАКРЫЛКИ, ШАССИ, СПОЙЛЕРЫ *)
     MANUAL:BOOLEAN; DE,DA,DR,DTZ:REAL;
     RECON:BOOLEAN; NFRMX,NEVMX,NSTEP,IEVK:INTEGER;
     RX:VEC13; RU:VEC4; RT:REAL;
@@ -66,6 +67,9 @@ PROCEDURE DTPAR(VAR DTB,DTN,DTX,DTD,DTU:REAL); FORTRAN;
 PROCEDURE DTADJ(VAR ERR,DT:REAL); FORTRAN;
 PROCEDURE GLFINJ(VAR K:INTEGER; VAR U:VEC4); FORTRAN;
 PROCEDURE GLFCLR; FORTRAN;
+(* КОНФИГУРАЦИЯ САМОЛЕТА: ПЕРЕКЛЮЧАТЕЛИ В /CONFG/ *)
+PROCEDURE CFSET(VAR IFL,IGR,ISP:INTEGER); FORTRAN;
+PROCEDURE CFGET(VAR IFL,IGR,ISP:INTEGER); FORTRAN;
 (* РЕГИСТРАТОР: ПАРАМЕТРЫ В /RECPAR/ *)
 PROCEDURE RCGPAR(VAR NF,NE,NS:INTEGER); FORTRAN;
 PROCEDURE RCSPAR(VAR NF,NE,NS:INTEGER); FORTRAN;
@@ -410,7 +414,7 @@ BEGIN
   IF FCUR<=FWRN THEN BEGIN WRITE(' MALO'); PAD(14) END
   ELSE PAD(19);
   WRITELN;
-  PAD(38);
+  WRITE(' KONF F',IFL:1,' G',IGR:1,' S',ISP:1); PAD(24);
   WRITE('+');
   WRITE(' REZERV='); PRNUM(FRES,7); WRITE(' KG');
   PAD(20);
@@ -475,12 +479,13 @@ BEGIN
   END
   ELSE
     WRITELN('INS: SEL/FRZ/UNF/INJ/EPS/REC/RPL/RST/SCR');
-    WRITELN('     FUL/RES/HLP/PIL');
+    WRITELN('     FUL/RES/HLP/PIL FLP/GER/SPL');
   ASK; GTALF(CMD)
 END;
 (************************************************************)
 BEGIN
   PASTEL[3]:=[48];
+  IFL:=0; IGR:=0; ISP:=0; CFSET(IFL,IGR,ISP);
   RCGPAR(NFRMX,NEVMX,NSTEP);
   IMODE:=0; IEX:=1;
   EXKTIP[1]:=3; EXSIGW[1]:=0.0; EXRSEED[1]:=7351.0;
@@ -526,6 +531,34 @@ BEGIN
           WRITELN('ДОПОЛНИТЕЛЬНОЕ ТОПЛИВО=',FEX:8:2,' КГ') END;
         CMD='RES   ': BEGIN ASK; GTRL(FRM,OK); FUELSE(FEX,FRM);
           WRITELN('МНОЖИТЕЛЬ РЕЗЕРВА=',FRM:8:3) END;
+        CMD='FLP   ': BEGIN ASK; GTINT(IFL,OK);
+          IF OK AND (IFL>=0) AND (IFL<=2) THEN
+          BEGIN
+            CFSET(IFL,IGR,ISP);
+            IF IFL=0 THEN WRITELN('ЗАКРЫЛКИ: УБРАНЫ')
+            ELSE IF IFL=1 THEN WRITELN('ЗАКРЫЛКИ: ВЗЛЕТНЫЕ')
+            ELSE WRITELN('ЗАКРЫЛКИ: ПОСАДОЧНЫЕ')
+          END
+          ELSE BEGIN CFGET(IFL,IGR,ISP);
+            WRITELN('ОШИБКА: FLP 0/1/2') END END;
+        CMD='GER   ': BEGIN ASK; GTINT(IGR,OK);
+          IF OK AND (IGR>=0) AND (IGR<=1) THEN
+          BEGIN
+            CFSET(IFL,IGR,ISP);
+            IF IGR=0 THEN WRITELN('ШАССИ: УБРАНО')
+            ELSE WRITELN('ШАССИ: ВЫПУЩЕНО')
+          END
+          ELSE BEGIN CFGET(IFL,IGR,ISP);
+            WRITELN('ОШИБКА: GER 0/1') END END;
+        CMD='SPL   ': BEGIN ASK; GTINT(ISP,OK);
+          IF OK AND (ISP>=0) AND (ISP<=1) THEN
+          BEGIN
+            CFSET(IFL,IGR,ISP);
+            IF ISP=0 THEN WRITELN('СПОЙЛЕРЫ: УБРАНЫ')
+            ELSE WRITELN('СПОЙЛЕРЫ: ВЫПУЩЕНЫ, ОЦЕНКА')
+          END
+          ELSE BEGIN CFGET(IFL,IGR,ISP);
+            WRITELN('ОШИБКА: SPL 0/1') END END;
         CMD='DTC   ': BEGIN ASK; GTRL(DTCV,OK);
           DTPAR(DTB,DTN,DTX,DTD,DTU);
           IF DTCV<DTN THEN DTCV:=DTN;
@@ -537,7 +570,8 @@ BEGIN
           ELSE
           BEGIN
             WRITELN('INS: SEL FRZ UNF INJ EPS REC RPL');
-            WRITELN('     RST SCR FUL RES HLP PIL')
+            WRITELN('     RST SCR FUL RES HLP PIL');
+            WRITELN('     FLP 0/1/2 GER 0/1 SPL 0/1')
           END;
         CMD='AUTO  ': BEGIN MANUAL:=FALSE; WRITELN('AUTO PILOT') END;
         CMD='EV+   ': BEGIN MANUAL:=TRUE; DE:=DE+0.05;
