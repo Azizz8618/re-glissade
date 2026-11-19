@@ -24,6 +24,9 @@ var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     IFL,IGR,ISP:integer; (* закрылки, шасси, спойлеры *)
     ICTLV:integer; (* переключатель шага *)
     MANUAL:boolean; DE,DA,DR,DTZ:real;
+    IPILOT,NPILOT:integer; (* 0 - выкл., >0 - шаги запроса *)
+    PILPAZ:boolean; (* мы стоим в пилотной паузе *)
+    RABS:real; (* число из абсолютной команды *)
     RECON:boolean; NFRMX,NEVMX,NSTEP,IEVK:integer;
     RX:VEC13; RU:VEC4; RT:real;
     XP,YP,HP,XK,YK,HK,ZG,PR,RMIN:real;
@@ -125,6 +128,39 @@ begin
   if P<=B.INPLEN then
     if B.A[P]='-' then begin S:=-1; P:=P+1 end
     else if B.A[P]='+' then P:=P+1;
+  R:=0; F:=1;
+  while P<=B.INPLEN do
+  begin
+    C:=B.A[P];
+    if C='.' then
+    begin
+      P:=P+1;
+      while P<=B.INPLEN do
+      begin
+        C:=B.A[P];
+        if (C<'0') or (C>'9') then begin OK:=false; exit end;
+        R:=R*10+ord(C)-48; F:=F*10; P:=P+1
+      end
+    end
+    else
+    begin
+      if (C<'0') or (C>'9') then begin OK:=false; exit end;
+      R:=R*10+ord(C)-48; P:=P+1
+    end
+  end;
+  R:=S*R/F
+end;
+(************************************************************)
+(* Число для абсолютной команды: литеры 1..3 - префикс "DE=",  *)
+(* число начинается с позиции 4 и продолжается до конца ввода. *)
+procedure GTNUM4(var R:real; var OK:boolean);
+var P,S:integer; F:real; C:char;
+begin
+  OK:=true; P:=4;
+  if P>B.INPLEN then begin OK:=false; exit end;
+  S:=1;
+  if B.A[P]='-' then begin S:=-1; P:=P+1 end
+  else if B.A[P]='+' then P:=P+1;
   R:=0; F:=1;
   while P<=B.INPLEN do
   begin
@@ -408,6 +444,13 @@ begin
   write('+');
   write(' REZERV='); PRNUM(FRES,7); write(' KG');
   PAD(20);
+  writeln;
+  (* Углы из GLANG уже в градусах; справа - фактические рули. *)
+  write(' TANG='); PRNUM(TH,5); write(' KREN='); PRNUM(GA,5);
+  write(' KURS='); PRNUM(PS,5); PAD(2);
+  write('+');
+  write(' DE='); PRNUM(DE,5); write(' DA='); PRNUM(DA,5);
+  write(' DR='); PRNUM(DR,5); PAD(8);
   writeln
 end;
 (************************************************************)
@@ -465,12 +508,24 @@ begin
   if IMODE=0 then
   begin
     writeln('PIL: STA STE STO PAR PRN AUTO INS EXIT');
-    writeln('MAN: EV+ EV- AI+ AI- RU+ RU- TH+ TH-')
+    writeln('MAN: EV+ EV- AI+ AI- RU+ RU- TH+ TH-');
+    writeln('     DE=Z DA=Z DR=Z TH=Z TRIM NEUT')
   end
   else
     writeln('INS: SEL/FRZ/UNF/INJ/EPS/REC/RPL/RST/SCR');
-    writeln('     FUL/RES/HLP/PIL FLP/GER/SPL ICTL');
-  ASK; GTALF(CMD)
+    writeln('     FUL/RES/HLP/PIL/PILOT FLP/GER/SPL ICTL');
+  ASK; GTALF(CMD);
+  (* Абсолютные команды: префикс DE=/DA=/DR=/TH=, число после него. *)
+  (* Приводим их к 6-литерному виду для обычного разбора в select.  *)
+  if B.INPLEN>=3 then
+    if (B.A[1]='D') and (B.A[2]='E') and (B.A[3]='=') then
+      CMD:='DE=   '
+    else if (B.A[1]='D') and (B.A[2]='A') and (B.A[3]='=') then
+      CMD:='DA=   '
+    else if (B.A[1]='D') and (B.A[2]='R') and (B.A[3]='=') then
+      CMD:='DR=   '
+    else if (B.A[1]='T') and (B.A[2]='H') and (B.A[3]='=') then
+      CMD:='TH=   '
 end;
 (************************************************************)
 begin
@@ -478,6 +533,8 @@ begin
   IFL:=0; IGR:=0; ISP:=0; CFSET(IFL,IGR,ISP);
   RCGPAR(NFRMX,NEVMX,NSTEP);
   IMODE:=0; IEX:=1;
+  IPILOT:=0; NPILOT:=10; (* запрос к пилоту по умолчанию выключен *)
+  PILPAZ:=false;
   EXKTIP[1]:=3; EXSIGW[1]:=0.0; EXRSEED[1]:=7351.0;
   EXDT0[1]:=0.60; EXTMAX[1]:=2400.0;
   EXKTIP[2]:=1; EXSIGW[2]:=1.5; EXRSEED[2]:=7351.5;
@@ -531,6 +588,15 @@ begin
             else writeln('ШАГ УПРАВЛЕНИЯ АДАПТИВНЫЙ')
           end
           else writeln('ОШИБКА: ICTL 0/3/4') end;
+        CMD='PILOT ': begin ASK; GTINT(NPILOT,OK);
+          if OK and (NPILOT>=0) and (NPILOT<=100) then
+          begin
+            IPILOT:=NPILOT;
+            if NPILOT>0 then
+              writeln('ЗАПРОС К ПИЛОТУ КАЖДЫЕ ',NPILOT:1,' ШАГОВ')
+            else writeln('ЗАПРОС К ПИЛОТУ ВЫКЛЮЧЕН')
+          end
+          else writeln('ОШИБКА: PILOT 0..100') end;
         CMD='FLP   ': begin ASK; GTINT(IFL,OK);
           if OK and (IFL>=0) and (IFL<=2) then
           begin
@@ -566,15 +632,21 @@ begin
           DTCTRL:=DTCV;
           writeln('DTC=',DTCTRL:8:3) end;
         CMD='HLP   ': if IMODE=0 then
-          writeln('PIL: STA STE STO PAR PRN AUTO INS EXIT')
+          begin
+            writeln('PIL: STA STE STO PAR PRN AUTO INS EXIT');
+            writeln('MAN: EV+ EV- AI+ AI- RU+ RU- TH+ TH-');
+            writeln('     DE=Z DA=Z DR=Z TH=Z TRIM NEUT')
+          end
           else
           begin
             writeln('INS: SEL FRZ UNF INJ EPS REC RPL');
             writeln('     RST SCR FUL RES HLP PIL');
             writeln('     FLP 0/1/2 GER 0/1 SPL 0/1');
-          writeln('     ICTL 0/3/4 - режим шага')
+            writeln('     ICTL 0/3/4 - шаг, PILOT 0..100');
+            writeln('     PILOT 0 - выкл., 1..100 - шаги')
           end;
-        CMD='AUTO  ': begin MANUAL:=false; writeln('AUTO PILOT') end;
+        CMD='AUTO  ': begin MANUAL:=false; DE:=0.0; DA:=0.0; DR:=0.0;
+          writeln('AUTO PILOT: РУЛИ В НУЛЕ') end;
         CMD='EV+   ': begin MANUAL:=true; DE:=DE+0.05;
           if DE>0.30 then DE:=0.30; writeln('DE=',DE:6:3) end;
         CMD='EV-   ': begin MANUAL:=true; DE:=DE-0.05;
@@ -591,6 +663,26 @@ begin
           if DTZ>1.0 then DTZ:=1.0; writeln('DTZ=',DTZ:6:3) end;
         CMD='TH-   ': begin MANUAL:=true; DTZ:=DTZ-0.05;
           if DTZ<0.0 then DTZ:=0.0; writeln('DTZ=',DTZ:6:3) end;
+        CMD='DE=   ': begin GTNUM4(RABS,OK);
+            if OK and (RABS>=-0.30) and (RABS<=0.30) then
+            begin DE:=RABS; MANUAL:=true; writeln('DE=',DE:6:3) end
+            else writeln('ОШИБКА: DE -0.30..0.30') end;
+        CMD='DA=   ': begin GTNUM4(RABS,OK);
+            if OK and (RABS>=-0.15) and (RABS<=0.15) then
+            begin DA:=RABS; MANUAL:=true; writeln('DA=',DA:6:3) end
+            else writeln('ОШИБКА: DA -0.15..0.15') end;
+        CMD='DR=   ': begin GTNUM4(RABS,OK);
+            if OK and (RABS>=-0.20) and (RABS<=0.20) then
+            begin DR:=RABS; MANUAL:=true; writeln('DR=',DR:6:3) end
+            else writeln('ОШИБКА: DR -0.20..0.20') end;
+        CMD='TH=   ': begin GTNUM4(RABS,OK);
+            if OK and (RABS>=0.0) and (RABS<=1.0) then
+            begin DTZ:=RABS; MANUAL:=true; writeln('DTZ=',DTZ:6:3) end
+            else writeln('ОШИБКА: TH 0.00..1.00') end;
+        CMD='TRIM  ': begin DE:=0.0; DA:=0.0; DR:=0.0;
+          writeln('ТРИМ: DE/DA/DR=0, ТЯГА СОХРАНЕНА') end;
+        CMD='NEUT  ': begin DE:=0.0; DA:=0.0; DR:=0.0; DTZ:=0.0;
+          MANUAL:=false; writeln('НЕЙТРАЛЬ: ВСЁ=0, AUTO PILOT') end;
         CMD='INJ   ': begin ASK; GTINT(IFLT,OK); GLFINJ(IFLT,U);
           RCEVT(IFLT,T); writeln('FAULT=',IFLT:1,' INJECTED') end;
         CMD='SCR   ': begin PRTSCR; PAUS:=true end;
@@ -606,6 +698,14 @@ begin
         CMD='PRN   ': PRFRM;
         CMD='EXIT  ': begin writeln('EXIT'); stop end;
         true: writeln('NEPR. KOMANDA')
+      end;
+      (* В пилотной паузе одна команда возвращает управление полёту. *)
+      if PILPAZ then
+      begin
+        PILPAZ:=false;
+        if (IPILOT>0) and (CMD<>'STO   ') and (CMD<>'EXIT  ') and
+           (CMD<>'FRZ   ') and (CMD<>'PILOT ') then
+        begin RUN:=true; PAUS:=false end
       end
     end;
     if RUN then
@@ -649,8 +749,14 @@ begin
           if ICTRL=3 then writeln('DTSH=',DTSH:8:4);
           if ICTRL=4 then writeln('DTCTRL=',DTCTRL:8:4);
             RUN:=false; PAUS:=true end;
-      if (not PAUS) and (NSTP mod NPRN=0) and (ICTRL=1)
-      then CMDLOOP(CMD)
+      (* Каденция запроса к пилоту отделена от печати кадра и ICTRL. *)
+      if (not PAUS) and (IPILOT>0) and (NPILOT>0) and
+         (NSTP mod NPILOT=0) then
+      begin
+        if (NSTP mod NPRN)<>0 then PRFRM;
+        writeln('ЗАПРОС К ПИЛОТУ: ВВЕДИТЕ КОМАНДУ');
+        PILPAZ:=true; RUN:=false; PAUS:=true
+      end
       end
     end
   until false
