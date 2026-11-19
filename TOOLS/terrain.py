@@ -13,6 +13,10 @@
 рельефе, высоте порога и препятствиях; это наша новая функция, а не
 реконструкция. См. отчёт ``docs/analysis/relief-mestnosti.md``.
 
+Кроме расчёта в одной точке модуль содержит анализ пройденного отрезка
+и монитор просвета. Это хостовой слой: он показывает и фиксирует опасное
+сближение, но не предотвращает его и не меняет траекторию в ядре.
+
 Запуск демонстрационного прогона:
 
     python3 TOOLS/terrain.py demo
@@ -62,6 +66,24 @@ LATERAL_PROFILE = (
 # Высота шасси HCR из ``SRC/GLTTX.FTN``, метры. Значение 2.5 выбрано
 # как игровая калибровка для Ту-104 и Ан-2; в ядре HCR зависит от типа.
 GEAR_HEIGHT = 2.5
+
+# Уклон глиссады из ``SRC/GLMAIN.FTN:88``: отклонение
+# EGLI = X(13) + 0.05241 * X(11). Используется только хостовым рендером.
+GLIDE_SLOPE = 0.05241
+
+# --- ПАРАМЕТРЫ АНАЛИЗА ПРОЙДЕННОГО ОТРЕЗКА. ---
+# Шаг модели 0,1 с при скорости около 70 метров в секунду даёт 7 метров
+# пути между кадрами. Чтобы не пропустить узкое препятствие, отрезок между
+# соседними кадрами дробится на части не длиннее этой величины. дополнительно
+# проверяются узлы профиля, попавшие внутрь отрезка.
+SEGMENT_STEP_LIMIT_M = 7.0
+SEGMENT_EPSILON = 1e-9
+
+# --- ПОРОГИ ПРЕДУПРЕЖДЕНИЯ (НЕ КАЛИБРОВАНЫ). ---
+# Чисел в исходниках нет: это учебные пороги хостового монитора.
+WARNING_CLEARANCE_M = 30.0
+CRITICAL_CLEARANCE_M = 10.0
+WARNING_VERTICAL_SPEED_MPS = -3.0
 
 # Демонстрационные состояния: (X(11), X(12), абсолютная высота X(13)).
 DEMO_STATES = (
@@ -171,6 +193,214 @@ class TerrainProfile:
             {'x11': coord, 'elevation': height}
             for coord, height in self.longitudinal
         ]
+
+
+def _segment_geometry(x11_0, x12_0, altitude_0, x11_1, x12_1, altitude_1):
+    """Проверить концы отрезка и вернуть точку начала, приращения и длину."""
+    start = (
+        _coordinate(x11_0, 'X(11) начала отрезка'),
+        _coordinate(x12_0, 'X(12) начала отрезка'),
+        _coordinate(altitude_0, 'высоты начала отрезка'),
+    )
+    finish = (
+        _coordinate(x11_1, 'X(11) конца отрезка'),
+        _coordinate(x12_1, 'X(12) конца отрезка'),
+        _coordinate(altitude_1, 'высоты конца отрезка'),
+    )
+    delta = tuple(finish[i] - start[i] for i in range(3))
+    length = math.sqrt(sum(component * component for component in delta))
+    return start, delta, length
+
+
+def _segment_fractions(start, delta, length, terrain):
+    """Собрать доли отрезка: равномерная сетка и узлы профиля внутри отрезка."""
+    steps = max(1, int(math.ceil(length / SEGMENT_STEP_LIMIT_M - SEGMENT_EPSILON)))
+    fractions = {float(index) / steps for index in range(steps + 1)}
+    for offset, axis in ((0, terrain.longitudinal), (1, terrain.lateral)):
+        span = delta[offset]
+        if abs(span) < SEGMENT_EPSILON:
+            continue
+        for coord, _height in axis:
+            share = (coord - start[offset]) / span
+            if SEGMENT_EPSILON < share < 1.0 - SEGMENT_EPSILON:
+                fractions.add(share)
+    return sorted(fractions)
+
+
+def _point_on_segment(start, delta, share):
+    """Вернуть координаты точки отрезка по его доле."""
+    return tuple(start[i] + share * delta[i] for i in range(3))
+
+
+def _contact_record(share, start, delta, terrain):
+    """Собрать описание касания в точке отрезка."""
+    x11, x12, altitude = _point_on_segment(start, delta, share)
+    ground = terrain.elevation(x11, x12)
+    return {
+        'x11': x11,
+        'x12': x12,
+        'altitude': altitude,
+        'ground': ground,
+        'clearance': altitude - ground,
+        'distance': share * math.sqrt(sum(component * component for component in delta)),
+        'fraction': share,
+    }
+
+
+def collision_along_segment(x11_0, x12_0, altitude_0,
+                            x11_1, x12_1, altitude_1,
+                            terrain=None):
+    """Найти первое касание земли на всём отрезке между двумя кадрами.
+
+    Аргументы задают начало и конец отрезка в координатах ``X(11)``, ``X(12)``
+    и ``X(13)``. Отрезок проверяется с шагом не более ``SEGMENT_STEP_LIMIT_M``
+    метров пути; дополнительно проверяются узлы профиля внутри отрезка, чтобы
+    не перескочить узкое препятствие. Граница касания уточняется делением
+    отрезка пополам. Признак касания совпадает с ядром: просвет не больше
+    высоты шасси.
+
+    Возвращает словарь с полями ``x11``, ``x12``, ``altitude``, ``ground``,
+    ``clearance``, ``distance`` и ``fraction`` либо ``None``, если касания нет.
+    Необязательный аргумент ``terrain`` позволяет передать другой профиль.
+    """
+    if terrain is None:
+        terrain = TerrainProfile()
+    start, delta, length = _segment_geometry(
+        x11_0, x12_0, altitude_0, x11_1, x12_1, altitude_1)
+    fractions = _segment_fractions(start, delta, length, terrain)
+    limit = terrain.gear_height
+
+    def gap_at(share):
+        x11, x12, altitude = _point_on_segment(start, delta, share)
+        return altitude - terrain.elevation(x11, x12)
+
+    previous = fractions[0]
+    if gap_at(previous) <= limit + SEGMENT_EPSILON:
+        return _contact_record(previous, start, delta, terrain)
+    for share in fractions[1:]:
+        if gap_at(share) <= limit + SEGMENT_EPSILON:
+            low, high = previous, share
+            for _ in range(40):
+                middle = (low + high) / 2.0
+                if gap_at(middle) <= limit + SEGMENT_EPSILON:
+                    high = middle
+                else:
+                    low = middle
+            return _contact_record(high, start, delta, terrain)
+        previous = share
+    return None
+
+
+class ClearanceMonitor:
+    """Накопление минимального просвета и событий опасного сближения.
+
+    Монитор не влияет на траекторию: он только наблюдает кадры через методы
+    ``observe`` и ``observe_segment``. Событие записывается при входе в зону
+    опасности, чтобы не дублировать предупреждение на каждом кадре. Пороги
+    задаются в конструкторе, по умолчанию берутся из блока констант.
+    """
+
+    def __init__(self, terrain=None, warning_clearance=None,
+                 critical_clearance=None, warning_vertical_speed=None):
+        self.terrain = TerrainProfile() if terrain is None else terrain
+        self.warning_clearance = (
+            WARNING_CLEARANCE_M if warning_clearance is None
+            else _coordinate(warning_clearance, 'порог предупреждения'))
+        self.critical_clearance = (
+            CRITICAL_CLEARANCE_M if critical_clearance is None
+            else _coordinate(critical_clearance, 'критический порог'))
+        self.warning_vertical_speed = (
+            WARNING_VERTICAL_SPEED_MPS if warning_vertical_speed is None
+            else _coordinate(warning_vertical_speed, 'порог вертикальной скорости'))
+        self.reset()
+
+    def reset(self):
+        """Очистить накопленные данные монитора."""
+        self.min_clearance = math.inf
+        self.min_point = None
+        self.events = []
+        self.samples = 0
+        self._alarm = False
+        self._previous = None
+
+    def _inferred_vertical_speed(self, altitude, time):
+        if self._previous is None:
+            return None
+        previous_time, previous_altitude = self._previous
+        if time is None or previous_time is None:
+            return None
+        interval = time - previous_time
+        if interval <= 0.0:
+            return None
+        return (altitude - previous_altitude) / interval
+
+    def observe(self, x11, x12, altitude, time=None, vertical_speed=None):
+        """Зарегистрировать один кадр и вернуть описание наблюдения."""
+        x11 = _coordinate(x11, 'X(11)')
+        x12 = _coordinate(x12, 'X(12)')
+        altitude = _coordinate(altitude, 'высота X(13)')
+        ground = self.terrain.elevation(x11, x12)
+        clearance = altitude - ground
+        self.samples += 1
+        if clearance < self.min_clearance:
+            self.min_clearance = clearance
+            self.min_point = {
+                'x11': x11, 'x12': x12, 'altitude': altitude,
+                'ground': ground, 'clearance': clearance, 'time': time,
+            }
+        speed = (vertical_speed if vertical_speed is not None
+                 else self._inferred_vertical_speed(altitude, time))
+        dangerous = (clearance < self.warning_clearance and
+                     (speed is None or speed <= self.warning_vertical_speed))
+        if dangerous and not self._alarm:
+            level = ('КРИТИЧНО' if clearance <= self.critical_clearance
+                     else 'ПРЕДУПРЕЖДЕНИЕ')
+            self.events.append({
+                'time': time, 'level': level, 'clearance': clearance,
+                'vertical_speed': speed, 'x11': x11, 'x12': x12,
+                'altitude': altitude,
+            })
+        self._alarm = dangerous
+        self._previous = (time, altitude)
+        return {
+            'x11': x11, 'x12': x12, 'altitude': altitude,
+            'ground': ground, 'clearance': clearance,
+            'vertical_speed': speed, 'time': time,
+        }
+
+    def observe_segment(self, x11_0, x12_0, altitude_0,
+                        x11_1, x12_1, altitude_1,
+                        time_0=None, time_1=None):
+        """Пропустить через монитор весь отрезок между кадрами.
+
+        Возвращает результат ``collision_along_segment`` для того же отрезка.
+        Промежуточные точки получают модельное время линейной интерполяцией,
+        вертикальная скорость считается по концам отрезка.
+        """
+        collision = collision_along_segment(
+            x11_0, x12_0, altitude_0, x11_1, x12_1, altitude_1,
+            terrain=self.terrain)
+        start, delta, length = _segment_geometry(
+            x11_0, x12_0, altitude_0, x11_1, x12_1, altitude_1)
+        fractions = _segment_fractions(start, delta, length, self.terrain)
+        speed = None
+        if time_0 is not None and time_1 is not None and time_1 > time_0:
+            speed = (altitude_1 - altitude_0) / (time_1 - time_0)
+        for share in fractions:
+            x11, x12, altitude = _point_on_segment(start, delta, share)
+            time = (None if time_0 is None
+                    else time_0 + share * (time_1 - time_0))
+            self.observe(x11, x12, altitude, time=time, vertical_speed=speed)
+        return collision
+
+    def summary(self):
+        """Вернуть сводку для отчёта или подписи кадра."""
+        return {
+            'samples': self.samples,
+            'min_clearance': self.min_clearance,
+            'min_point': self.min_point,
+            'events': list(self.events),
+        }
 
 
 def run_demo(log=print, point=None) -> int:

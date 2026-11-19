@@ -4,6 +4,7 @@
 
 import contextlib
 import io
+import math
 import os
 import sys
 import unittest
@@ -115,6 +116,141 @@ class TerrainProfileTests(unittest.TestCase):
             self.profile.elevation(float('nan'), 0.0)
         with self.assertRaises(tr.TerrainFormatError):
             self.profile.clearance(0.0, 0.0, float('inf'))
+
+
+class CollisionTests(unittest.TestCase):
+    def setUp(self):
+        # Узкий пик: концы отрезка безопасны, а середина — нет.
+        self.spike = tr.TerrainProfile(
+            longitudinal=[(-10.0, 0.0), (-5.0, 0.0), (-4.0, 100.0),
+                          (-3.0, 0.0), (10.0, 0.0)],
+            lateral=[(-100.0, 0.0), (100.0, 0.0)],
+            gear_height=1.0,
+        )
+
+    def test_safe_segment_has_no_collision(self):
+        self.assertIsNone(tr.collision_along_segment(
+            -10.0, 0.0, 200.0, 0.0, 0.0, 200.0, terrain=self.spike))
+
+    def test_contact_between_two_safe_frames(self):
+        hit = tr.collision_along_segment(
+            -10.0, 0.0, 10.0, 0.0, 0.0, 10.0, terrain=self.spike)
+        self.assertIsNotNone(hit)
+        self.assertGreater(hit['x11'], -5.0)
+        self.assertLess(hit['x11'], -4.0)
+        self.assertGreater(hit['distance'], 5.0)
+        self.assertLess(hit['distance'], 6.0)
+        self.assertAlmostEqual(hit['clearance'], 1.0, delta=0.5)
+        self.assertAlmostEqual(hit['ground'], 9.0, delta=0.5)
+
+    def test_narrow_spike_is_not_skipped(self):
+        terrain = tr.TerrainProfile(
+            longitudinal=[(-10.0, 0.0), (-5.001, 0.0), (-5.0, 100.0),
+                          (-4.999, 0.0), (10.0, 0.0)],
+            lateral=[(-100.0, 0.0), (100.0, 0.0)],
+            gear_height=1.0,
+        )
+        hit = tr.collision_along_segment(
+            -10.0, 0.0, 10.0, 0.0, 0.0, 10.0, terrain=terrain)
+        self.assertIsNotNone(hit)
+        self.assertAlmostEqual(hit['x11'], -5.0, delta=0.02)
+
+    def test_contact_at_start_has_zero_distance(self):
+        hit = tr.collision_along_segment(
+            -10.0, 0.0, 0.0, 0.0, 0.0, 10.0, terrain=self.spike)
+        self.assertIsNotNone(hit)
+        self.assertAlmostEqual(hit['distance'], 0.0)
+        self.assertAlmostEqual(hit['fraction'], 0.0)
+
+    def test_contact_at_end_has_full_distance(self):
+        hit = tr.collision_along_segment(
+            -10.0, 0.0, 10.0, -4.0, 0.0, 100.0, terrain=self.spike)
+        self.assertIsNotNone(hit)
+        self.assertAlmostEqual(hit['fraction'], 1.0, delta=0.01)
+        self.assertAlmostEqual(hit['x11'], -4.0, delta=0.1)
+
+    def test_invalid_endpoint_is_rejected(self):
+        with self.assertRaises(tr.TerrainFormatError):
+            tr.collision_along_segment(
+                float('nan'), 0.0, 10.0, 0.0, 0.0, 10.0, terrain=self.spike)
+
+
+class ClearanceMonitorTests(unittest.TestCase):
+    def setUp(self):
+        self.flat = tr.TerrainProfile(
+            longitudinal=[(-100.0, 0.0), (100.0, 0.0)],
+            lateral=[(-100.0, 0.0), (100.0, 0.0)],
+        )
+        self.monitor = tr.ClearanceMonitor(
+            self.flat, warning_clearance=20.0, critical_clearance=5.0,
+            warning_vertical_speed=-2.0)
+
+    def test_minimum_clearance_is_accumulated(self):
+        self.monitor.observe(-10.0, 0.0, 100.0, time=0.0)
+        result = self.monitor.observe(-5.0, 0.0, 30.0, time=1.0)
+        self.assertEqual(self.monitor.min_clearance, 30.0)
+        self.assertEqual(self.monitor.min_point['x11'], -5.0)
+        self.assertEqual(result['clearance'], 30.0)
+
+    def test_warning_on_low_clearance_and_descent(self):
+        self.monitor.observe(-10.0, 0.0, 100.0, time=0.0)
+        self.monitor.observe(-5.0, 0.0, 10.0, time=1.0)
+        self.assertEqual(len(self.monitor.events), 1)
+        self.assertEqual(self.monitor.events[0]['level'], 'ПРЕДУПРЕЖДЕНИЕ')
+        self.assertEqual(self.monitor.events[0]['time'], 1.0)
+
+    def test_critical_level_below_critical_threshold(self):
+        self.monitor.observe(-10.0, 0.0, 100.0, time=0.0)
+        self.monitor.observe(-5.0, 0.0, 4.0, time=1.0)
+        self.assertEqual(self.monitor.events[0]['level'], 'КРИТИЧНО')
+
+    def test_no_warning_when_climbing(self):
+        self.monitor.observe(-10.0, 0.0, 100.0, time=0.0)
+        self.monitor.observe(-5.0, 0.0, 10.0, time=1.0, vertical_speed=5.0)
+        self.assertEqual(self.monitor.events, [])
+
+    def test_warning_is_not_repeated_on_every_frame(self):
+        self.monitor.observe(-10.0, 0.0, 100.0, time=0.0)
+        self.monitor.observe(-5.0, 0.0, 10.0, time=1.0)
+        self.monitor.observe(-4.0, 0.0, 8.0, time=2.0)
+        self.assertEqual(len(self.monitor.events), 1)
+
+    def test_alarm_resets_after_safe_frame(self):
+        self.monitor.observe(-10.0, 0.0, 100.0, time=0.0)
+        self.monitor.observe(-5.0, 0.0, 10.0, time=1.0)
+        self.monitor.observe(-4.0, 0.0, 100.0, time=2.0)
+        self.monitor.observe(-3.0, 0.0, 10.0, time=3.0)
+        self.assertEqual(len(self.monitor.events), 2)
+
+    def test_vertical_speed_is_inferred_from_time(self):
+        self.monitor.observe(-10.0, 0.0, 50.0, time=0.0)
+        result = self.monitor.observe(-5.0, 0.0, 45.0, time=2.0)
+        self.assertEqual(result['vertical_speed'], -2.5)
+
+    def test_observe_segment_checks_intermediate_points(self):
+        terrain = tr.TerrainProfile(
+            longitudinal=[(-10.0, 0.0), (-1.0, 0.0), (0.0, 100.0),
+                          (1.0, 0.0), (10.0, 0.0)],
+            lateral=[(-100.0, 0.0), (100.0, 0.0)],
+            gear_height=1.0,
+        )
+        monitor = tr.ClearanceMonitor(
+            terrain, warning_clearance=20.0, warning_vertical_speed=0.0)
+        hit = monitor.observe_segment(
+            -10.0, 0.0, 10.0, 10.0, 0.0, 10.0, time_0=0.0, time_1=2.0)
+        self.assertIsNotNone(hit)
+        self.assertLess(monitor.min_clearance, 0.0)
+        self.assertGreater(monitor.samples, 2)
+        self.assertTrue(monitor.events)
+
+    def test_summary_and_reset(self):
+        self.monitor.observe(-10.0, 0.0, 5.0, time=0.0)
+        summary = self.monitor.summary()
+        self.assertEqual(summary['samples'], 1)
+        self.assertEqual(len(summary['events']), 1)
+        self.monitor.reset()
+        self.assertEqual(self.monitor.events, [])
+        self.assertTrue(math.isinf(self.monitor.min_clearance))
 
 
 class DemoTests(unittest.TestCase):
