@@ -36,6 +36,7 @@ VAR X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     ICTLV:INTEGER; (* ПЕРЕКЛЮЧАТЕЛЬ ШАГА *)
     MANUAL:BOOLEAN; DE,DA,DR,DTZ:REAL;
     IPILOT,NPILOT:INTEGER; (* 0 - ВЫКЛ., >0 - ШАГИ ЗАПРОСА *)
+    HPAGE:INTEGER; (* НОМЕР СТРАНИЦЫ СПРАВКИ HLP *)
     PILPAZ:BOOLEAN; (* МЫ СТОИМ В ПИЛОТНОЙ ПАУЗЕ *)
     RABS:REAL; (* ЧИСЛО ИЗ АБСОЛЮТНОЙ КОМАНДЫ *)
     RECON:BOOLEAN; NFRMX,NEVMX,NSTEP,IEVK:INTEGER;
@@ -514,6 +515,84 @@ BEGIN
   END
 END;
 (************************************************************)
+(* СПРАВКА ОПЕРАТОРА-ПИЛОТА: ПЕЧАТЬ СТРАНИЦЫ P (1..3). *)
+PROCEDURE HELP(P:INTEGER);
+VAR N,NZ:INTEGER;
+BEGIN
+  WRITELN;
+  IF P=1 THEN
+  BEGIN
+    WRITELN('СПРАВКА 1/3 - ПИЛОТ: УПРАВЛЕНИЕ');
+    WRITELN('STA ПУСК  STE ШАГ 0.1 С  STO ОСТАНОВ');
+    WRITELN('PAR ПАРАМЕТРЫ И ПЕРЕЗАПУСК  PRN КАДР');
+    WRITELN('AUTO АВТОПИЛОТ: РУЛИ В НУЛЬ  INS ИНСТРУКТОР');
+    WRITELN('EXIT ВЫХОД');
+    WRITELN('EV+ EV- DE РУЛЬ ВЫСОТЫ ШАГ 0.05 ПРЕДЕЛ +/-0.30');
+    WRITELN('AI+ AI- DA ЭЛЕРОНЫ  ШАГ 0.05 ПРЕДЕЛ +/-0.15');
+    WRITELN('RU+ RU- DR РУЛЬ НАПР. ШАГ 0.05 ПРЕДЕЛ +/-0.20');
+    WRITELN('TH+ TH- DTZ ТЯГА    ШАГ 0.05 ПРЕДЕЛ 0.00..1.00');
+    WRITELN('АБСОЛЮТНО: DE=Z -0.30..0.30 DA=Z -0.15..0.15');
+    WRITELN('           DR=Z -0.20..0.20 TH=Z 0.00..1.00');
+    WRITELN('ЕДИНИЦЫ: DE/DA/DR - ДОЛИ, DTZ - ДОЛЯ ТЯГИ');
+    WRITELN('TRIM РУЛИ В НУЛЬ, ТЯГА СОХРАНЕНА');
+    WRITELN('NEUT ВСЕ В НУЛЬ И АВТОПИЛОТ');
+    WRITELN('PILOT 0 - ЗАПРОС ВЫКЛЮЧЕН; 1..100 - ШАГОВ');
+    WRITELN('МЕЖДУ ЗАПРОСАМИ К ПИЛОТУ. НА ЗАПРОСЕ:');
+    WRITELN('КАДР, ПАУЗА И ОЖИДАНИЕ КОМАНДЫ; ДАЛЕЕ');
+    WRITELN('ПОЛЕТ ПРОДОЛЖАЕТСЯ, КРОМЕ STO/EXIT/FRZ/PILOT')
+  END
+  ELSE IF P=2 THEN
+  BEGIN
+    WRITELN('СПРАВКА 2/3 - ИНСТРУКТОР');
+    WRITELN('SEL 1..5 ВЫБРАТЬ УПРАЖНЕНИЕ T1..T5');
+    WRITELN('FRZ ЗАМОРОЗКА  UNF СНЯТЬ ЗАМОРОЗКУ');
+    WRITELN('INJ 1..5 ВВЕСТИ ОТКАЗ');
+    WRITELN('ICTL 0/3/4 ШАГ: ФИКС/ИНТЕГР/УПРАВЛЕНИЕ');
+    WRITELN('EPS >0 ДОПУСК ОШИБКИ, ПОРОГ АДАПТАЦИИ');
+    WRITELN('PFL >0 ПОРОГ ОТНОСИТЕЛЬНОЙ НОРМЫ ОШИБКИ');
+    WRITELN('DTC 0.02..0.50 ШАГ УПРАВЛЕНИЯ ВРУЧНУЮ');
+    WRITELN('FUL >=0 КГ ДОПОЛНИТЕЛЬНОЕ ТОПЛИВО');
+    WRITELN('RES >0 МНОЖИТЕЛЬ РЕЗЕРВА ТОПЛИВА');
+    WRITELN('FLP 0/1/2 ЗАКРЫЛКИ: УБРАНЫ/ВЗЛЕТ/ПОСАДКА');
+    WRITELN('GER 0/1 ШАССИ: УБРАНО/ВЫПУЩЕНО');
+    WRITELN('SPL 0/1 СПОЙЛЕРЫ: УБРАНЫ/ВЫПУЩЕНЫ');
+    WRITELN('REC ЗАПИСЬ  RPL ВОСПРОИЗВЕДЕНИЕ');
+    WRITELN('RST ОЧИСТКА ЗАПИСИ  SCR ДЕБРИФИНГ');
+    WRITELN('PIL РЕЖИМ ПИЛОТА  EXIT ВЫХОД');
+    WRITELN('PILOT 0..100 КАДЕНЦИЯ ЗАПРОСА К ПИЛОТУ');
+    WRITELN('HLP 1/2/3 - ЭТА СПРАВКА: ПИЛОТ/ИНСТРУКТОР/ЗАДАНИЕ')
+  END
+  ELSE IF P=3 THEN
+  BEGIN
+    WRITELN('СПРАВКА 3/3 - ПОЛЕТНОЕ ЗАДАНИЕ');
+    IF KTIP=1 THEN WRITELN('САМОЛЕТ: МИГ-15')
+    ELSE IF KTIP=2 THEN WRITELN('САМОЛЕТ: ИЛ-28')
+    ELSE IF KTIP=3 THEN WRITELN('САМОЛЕТ: ТУ-104')
+    ELSE IF KTIP=4 THEN WRITELN('САМОЛЕТ: АН-24')
+    ELSE IF KTIP=5 THEN WRITELN('САМОЛЕТ: АН-2')
+    ELSE WRITELN('САМОЛЕТ: НЕИЗВЕСТНЫЙ ТИП');
+    WRITELN('MODE=',MODE:1,' ICTRL=',ICTRL:1,' KTIP=',KTIP:1);
+    WRITELN('SIGW=',SIGW:6:2,' RSEED=',RSEED:8:1);
+    WRITELN('DT0=',DT0:5:2,' TMAX=',TMAX:7:0,' С');
+    NZ:=0;
+    FOR N:=1 TO 5 DO
+      IF (KTIP=EXKTIP[N]) AND (ABS(SIGW-EXSIGW[N])<0.0001) AND
+         (ABS(RSEED-EXRSEED[N])<0.0001) AND
+         (ABS(DT0-EXDT0[N])<0.0001) AND
+         (ABS(TMAX-EXTMAX[N])<0.0001) THEN NZ:=N;
+    IF NZ>0 THEN
+      WRITELN('ЗАДАНИЕ T',NZ:1,' ОПРЕДЕЛЕНО ПО EX-МАССИВАМ')
+    ELSE WRITELN('ЗАДАНИЕ T1..T5 НЕ ОПРЕДЕЛЕНО');
+    WRITELN('СЦЕНАРИЙ:');
+    IF NZ=1 THEN WRITELN('ТУ-104 ШТИЛЬ, ТОЧНАЯ ПОСАДКА')
+    ELSE IF NZ=2 THEN WRITELN('МИГ-15 1952 ГРОЗА У АЭРОДРОМА')
+    ELSE IF NZ=3 THEN WRITELN('ИЛ-28 1958 СЛОЖНЫЕ МЕТЕОУСЛОВИЯ')
+    ELSE IF NZ=4 THEN WRITELN('АН-24 2010 ТУМАН, ИГАРКА')
+    ELSE IF NZ=5 THEN WRITELN('АН-2 УМЕРЕННАЯ ТУРБУЛЕНТНОСТЬ');
+    WRITELN('ЦЕЛЬ: VERT<=4.0  TCH>=0  OCENKA<=3')
+  END
+END;
+(************************************************************)
 PROCEDURE CMDLOOP(VAR CMD:ALFA);
 BEGIN
   IF IMODE=0 THEN
@@ -525,6 +604,7 @@ BEGIN
   ELSE
     WRITELN('INS: SEL/FRZ/UNF/INJ/EPS/REC/RPL/RST/SCR');
     WRITELN('     FUL/RES/HLP/PIL/PILOT FLP/GER/SPL ICTL');
+    WRITELN('HLP 1/2/3 - СПРАВКА ПИЛОТ/ИНСТРУКТОР/ЗАДАНИЕ');
   ASK; GTALF(CMD);
   (* АБСОЛЮТНЫЕ КОМАНДЫ: ПРЕФИКС DE=/DA=/DR=/TH=, ЧИСЛО ПОСЛЕ НЕГО. *)
   (* ПРИВОДИМ ИХ К 6-ЛИТЕРНОМУ ВИДУ ДЛЯ ОБЫЧНОГО РАЗБОРА В SELECT.  *)
@@ -536,7 +616,17 @@ BEGIN
     ELSE IF (B.A[1]='D') AND (B.A[2]='R') AND (B.A[3]='=') THEN
       CMD:='DR=   '
     ELSE IF (B.A[1]='T') AND (B.A[2]='H') AND (B.A[3]='=') THEN
-      CMD:='TH=   '
+      CMD:='TH=   ';
+  (* СПРАВКА: HLP ИЛИ HLP 1/2/3 - НОМЕР СТРАНИЦЫ НА ТОЙ ЖЕ СТРОКЕ. *)
+  HPAGE:=0;
+  IF B.INPLEN>=3 THEN
+    IF (B.A[1]='H') AND (B.A[2]='L') AND (B.A[3]='P') THEN
+    BEGIN
+      CMD:='HLP   ';
+      IF B.INPLEN>=5 THEN
+        IF (B.A[4]=' ') AND (B.A[5]>='1') AND (B.A[5]<='3') THEN
+          HPAGE:=ORD(B.A[5])-48
+    END
 END;
 (************************************************************)
 BEGIN
@@ -545,6 +635,7 @@ BEGIN
   RCGPAR(NFRMX,NEVMX,NSTEP);
   IMODE:=0; IEX:=1;
   IPILOT:=0; NPILOT:=10; (* ЗАПРОС К ПИЛОТУ ПО УМОЛЧАНИЮ ВЫКЛЮЧЕН *)
+  HPAGE:=1; (* СПРАВКА ПО УМОЛЧАНИЮ ОТКРЫВАЕТ ПЕРВУЮ СТРАНИЦУ *)
   PILPAZ:=FALSE;
   EXKTIP[1]:=3; EXSIGW[1]:=0.0; EXRSEED[1]:=7351.0;
   EXDT0[1]:=0.60; EXTMAX[1]:=2400.0;
@@ -642,20 +733,10 @@ BEGIN
           IF DTCV>DTX THEN DTCV:=DTX;
           DTCTRL:=DTCV;
           WRITELN('DTC=',DTCTRL:8:3) END;
-        CMD='HLP   ': IF IMODE=0 THEN
-          BEGIN
-            WRITELN('PIL: STA STE STO PAR PRN AUTO INS EXIT');
-            WRITELN('MAN: EV+ EV- AI+ AI- RU+ RU- TH+ TH-');
-            WRITELN('     DE=Z DA=Z DR=Z TH=Z TRIM NEUT')
-          END
-          ELSE
-          BEGIN
-            WRITELN('INS: SEL FRZ UNF INJ EPS REC RPL');
-            WRITELN('     RST SCR FUL RES HLP PIL');
-            WRITELN('     FLP 0/1/2 GER 0/1 SPL 0/1');
-            WRITELN('     ICTL 0/3/4 - ШАГ, PILOT 0..100');
-            WRITELN('     PILOT 0 - ВЫКЛ., 1..100 - ШАГИ')
-          END;
+        CMD='HLP   ': BEGIN
+          IF (HPAGE<1) OR (HPAGE>3) THEN HPAGE:=1;
+          HELP(HPAGE)
+        END;
         CMD='AUTO  ': BEGIN MANUAL:=FALSE; DE:=0.0; DA:=0.0; DR:=0.0;
           WRITELN('AUTO PILOT: РУЛИ В НУЛЕ') END;
         CMD='EV+   ': BEGIN MANUAL:=TRUE; DE:=DE+0.05;

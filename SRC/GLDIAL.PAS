@@ -25,6 +25,7 @@ var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     ICTLV:integer; (* переключатель шага *)
     MANUAL:boolean; DE,DA,DR,DTZ:real;
     IPILOT,NPILOT:integer; (* 0 - выкл., >0 - шаги запроса *)
+    HPAGE:integer; (* номер страницы справки HLP *)
     PILPAZ:boolean; (* мы стоим в пилотной паузе *)
     RABS:real; (* число из абсолютной команды *)
     RECON:boolean; NFRMX,NEVMX,NSTEP,IEVK:integer;
@@ -503,6 +504,84 @@ begin
   end
 end;
 (************************************************************)
+(* Справка оператора-пилота: печать страницы P (1..3). *)
+procedure HELP(P:integer);
+var N,NZ:integer;
+begin
+  writeln;
+  if P=1 then
+  begin
+    writeln('СПРАВКА 1/3 - ПИЛОТ: УПРАВЛЕНИЕ');
+    writeln('STA ПУСК  STE ШАГ 0.1 С  STO ОСТАНОВ');
+    writeln('PAR ПАРАМЕТРЫ И ПЕРЕЗАПУСК  PRN КАДР');
+    writeln('AUTO АВТОПИЛОТ: РУЛИ В НУЛЬ  INS ИНСТРУКТОР');
+    writeln('EXIT ВЫХОД');
+    writeln('EV+ EV- DE РУЛЬ ВЫСОТЫ ШАГ 0.05 ПРЕДЕЛ +/-0.30');
+    writeln('AI+ AI- DA ЭЛЕРОНЫ  ШАГ 0.05 ПРЕДЕЛ +/-0.15');
+    writeln('RU+ RU- DR РУЛЬ НАПР. ШАГ 0.05 ПРЕДЕЛ +/-0.20');
+    writeln('TH+ TH- DTZ ТЯГА    ШАГ 0.05 ПРЕДЕЛ 0.00..1.00');
+    writeln('АБСОЛЮТНО: DE=Z -0.30..0.30 DA=Z -0.15..0.15');
+    writeln('           DR=Z -0.20..0.20 TH=Z 0.00..1.00');
+    writeln('ЕДИНИЦЫ: DE/DA/DR - ДОЛИ, DTZ - ДОЛЯ ТЯГИ');
+    writeln('TRIM РУЛИ В НУЛЬ, ТЯГА СОХРАНЕНА');
+    writeln('NEUT ВСЁ В НУЛЬ И АВТОПИЛОТ');
+    writeln('PILOT 0 - ЗАПРОС ВЫКЛЮЧЕН; 1..100 - ШАГОВ');
+    writeln('МЕЖДУ ЗАПРОСАМИ К ПИЛОТУ. НА ЗАПРОСЕ:');
+    writeln('КАДР, ПАУЗА И ОЖИДАНИЕ КОМАНДЫ; ДАЛЕЕ');
+    writeln('ПОЛЁТ ПРОДОЛЖАЕТСЯ, КРОМЕ STO/EXIT/FRZ/PILOT')
+  end
+  else if P=2 then
+  begin
+    writeln('СПРАВКА 2/3 - ИНСТРУКТОР');
+    writeln('SEL 1..5 ВЫБРАТЬ УПРАЖНЕНИЕ T1..T5');
+    writeln('FRZ ЗАМОРОЗКА  UNF СНЯТЬ ЗАМОРОЗКУ');
+    writeln('INJ 1..5 ВВЕСТИ ОТКАЗ');
+    writeln('ICTL 0/3/4 ШАГ: ФИКС/ИНТЕГР/УПРАВЛЕНИЕ');
+    writeln('EPS >0 ДОПУСК ОШИБКИ, ПОРОГ АДАПТАЦИИ');
+    writeln('PFL >0 ПОРОГ ОТНОСИТЕЛЬНОЙ НОРМЫ ОШИБКИ');
+    writeln('DTC 0.02..0.50 ШАГ УПРАВЛЕНИЯ ВРУЧНУЮ');
+    writeln('FUL >=0 КГ ДОПОЛНИТЕЛЬНОЕ ТОПЛИВО');
+    writeln('RES >0 МНОЖИТЕЛЬ РЕЗЕРВА ТОПЛИВА');
+    writeln('FLP 0/1/2 ЗАКРЫЛКИ: УБРАНЫ/ВЗЛЁТ/ПОСАДКА');
+    writeln('GER 0/1 ШАССИ: УБРАНО/ВЫПУЩЕНО');
+    writeln('SPL 0/1 СПОЙЛЕРЫ: УБРАНЫ/ВЫПУЩЕНЫ');
+    writeln('REC ЗАПИСЬ  RPL ВОСПРОИЗВЕДЕНИЕ');
+    writeln('RST ОЧИСТКА ЗАПИСИ  SCR ДЕБРИФИНГ');
+    writeln('PIL РЕЖИМ ПИЛОТА  EXIT ВЫХОД');
+    writeln('PILOT 0..100 КАДЕНЦИЯ ЗАПРОСА К ПИЛОТУ');
+    writeln('HLP 1/2/3 - ЭТА СПРАВКА: ПИЛОТ/ИНСТРУКТОР/ЗАДАНИЕ')
+  end
+  else if P=3 then
+  begin
+    writeln('СПРАВКА 3/3 - ПОЛЁТНОЕ ЗАДАНИЕ');
+    if KTIP=1 then writeln('САМОЛЁТ: МИГ-15')
+    else if KTIP=2 then writeln('САМОЛЁТ: ИЛ-28')
+    else if KTIP=3 then writeln('САМОЛЁТ: ТУ-104')
+    else if KTIP=4 then writeln('САМОЛЁТ: АН-24')
+    else if KTIP=5 then writeln('САМОЛЁТ: АН-2')
+    else writeln('САМОЛЁТ: НЕИЗВЕСТНЫЙ ТИП');
+    writeln('MODE=',MODE:1,' ICTRL=',ICTRL:1,' KTIP=',KTIP:1);
+    writeln('SIGW=',SIGW:6:2,' RSEED=',RSEED:8:1);
+    writeln('DT0=',DT0:5:2,' TMAX=',TMAX:7:0,' С');
+    NZ:=0;
+    for N:=1 to 5 do
+      if (KTIP=EXKTIP[N]) and (abs(SIGW-EXSIGW[N])<0.0001) and
+         (abs(RSEED-EXRSEED[N])<0.0001) and
+         (abs(DT0-EXDT0[N])<0.0001) and
+         (abs(TMAX-EXTMAX[N])<0.0001) then NZ:=N;
+    if NZ>0 then
+      writeln('ЗАДАНИЕ T',NZ:1,' ОПРЕДЕЛЕНО ПО EX-МАССИВАМ')
+    else writeln('ЗАДАНИЕ T1..T5 НЕ ОПРЕДЕЛЕНО');
+    writeln('СЦЕНАРИЙ:');
+    if NZ=1 then writeln('ТУ-104 ШТИЛЬ, ТОЧНАЯ ПОСАДКА')
+    else if NZ=2 then writeln('МИГ-15 1952 ГРОЗА У АЭРОДРОМА')
+    else if NZ=3 then writeln('ИЛ-28 1958 СЛОЖНЫЕ МЕТЕОУСЛОВИЯ')
+    else if NZ=4 then writeln('АН-24 2010 ТУМАН, ИГАРКА')
+    else if NZ=5 then writeln('АН-2 УМЕРЕННАЯ ТУРБУЛЕНТНОСТЬ');
+    writeln('ЦЕЛЬ: VERT<=4.0  TCH>=0  OCENKA<=3')
+  end
+end;
+(************************************************************)
 procedure CMDLOOP(var CMD:alfa);
 begin
   if IMODE=0 then
@@ -514,6 +593,7 @@ begin
   else
     writeln('INS: SEL/FRZ/UNF/INJ/EPS/REC/RPL/RST/SCR');
     writeln('     FUL/RES/HLP/PIL/PILOT FLP/GER/SPL ICTL');
+    writeln('HLP 1/2/3 - СПРАВКА ПИЛОТ/ИНСТРУКТОР/ЗАДАНИЕ');
   ASK; GTALF(CMD);
   (* Абсолютные команды: префикс DE=/DA=/DR=/TH=, число после него. *)
   (* Приводим их к 6-литерному виду для обычного разбора в select.  *)
@@ -525,7 +605,17 @@ begin
     else if (B.A[1]='D') and (B.A[2]='R') and (B.A[3]='=') then
       CMD:='DR=   '
     else if (B.A[1]='T') and (B.A[2]='H') and (B.A[3]='=') then
-      CMD:='TH=   '
+      CMD:='TH=   ';
+  (* Справка: HLP или HLP 1/2/3 - номер страницы на той же строке. *)
+  HPAGE:=0;
+  if B.INPLEN>=3 then
+    if (B.A[1]='H') and (B.A[2]='L') and (B.A[3]='P') then
+    begin
+      CMD:='HLP   ';
+      if B.INPLEN>=5 then
+        if (B.A[4]=' ') and (B.A[5]>='1') and (B.A[5]<='3') then
+          HPAGE:=ord(B.A[5])-48
+    end
 end;
 (************************************************************)
 begin
@@ -534,6 +624,7 @@ begin
   RCGPAR(NFRMX,NEVMX,NSTEP);
   IMODE:=0; IEX:=1;
   IPILOT:=0; NPILOT:=10; (* запрос к пилоту по умолчанию выключен *)
+  HPAGE:=1; (* справка по умолчанию открывает первую страницу *)
   PILPAZ:=false;
   EXKTIP[1]:=3; EXSIGW[1]:=0.0; EXRSEED[1]:=7351.0;
   EXDT0[1]:=0.60; EXTMAX[1]:=2400.0;
@@ -631,20 +722,10 @@ begin
           if DTCV>DTX then DTCV:=DTX;
           DTCTRL:=DTCV;
           writeln('DTC=',DTCTRL:8:3) end;
-        CMD='HLP   ': if IMODE=0 then
-          begin
-            writeln('PIL: STA STE STO PAR PRN AUTO INS EXIT');
-            writeln('MAN: EV+ EV- AI+ AI- RU+ RU- TH+ TH-');
-            writeln('     DE=Z DA=Z DR=Z TH=Z TRIM NEUT')
-          end
-          else
-          begin
-            writeln('INS: SEL FRZ UNF INJ EPS REC RPL');
-            writeln('     RST SCR FUL RES HLP PIL');
-            writeln('     FLP 0/1/2 GER 0/1 SPL 0/1');
-            writeln('     ICTL 0/3/4 - шаг, PILOT 0..100');
-            writeln('     PILOT 0 - выкл., 1..100 - шаги')
-          end;
+        CMD='HLP   ': begin
+          if (HPAGE<1) or (HPAGE>3) then HPAGE:=1;
+          HELP(HPAGE)
+        end;
         CMD='AUTO  ': begin MANUAL:=false; DE:=0.0; DA:=0.0; DR:=0.0;
           writeln('AUTO PILOT: РУЛИ В НУЛЕ') end;
         CMD='EV+   ': begin MANUAL:=true; DE:=DE+0.05;
