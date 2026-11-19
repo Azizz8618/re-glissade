@@ -130,7 +130,7 @@ def main() -> int:
         print('  ' + ('ГОТОВО' if ok else 'ОШИБКА') + ': ' + detail[:120], flush=True)
 
     optional = [
-        ('Графика (этап 11)', 'graf_driver.py', ['verify'], 'СОВПАДЕНИЕ'),
+        ('Графика (этап 11)', 'graf_driver.py', ['verify'], 'совпадает'),
         ('Звук (этап 12)', 'sound_adapter.py', ['demo'], ''),
         ('Платформа (этап 12)', 'platform_adapter.py', ['demo'], ''),
     ]
