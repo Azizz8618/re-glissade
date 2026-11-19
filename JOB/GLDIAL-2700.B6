@@ -94,6 +94,7 @@ PROCEDURE GLANG(VAR X:VEC13; VAR TH,GA,PS,DTM,EG:REAL;
 (* РЕЛЬЕФ: ВСЕ РАСЧЕТЫ - В ФОРТРАНЕ, ПАСКАЛЬ ТОЛЬКО ПЕЧАТАЕТ *)
 PROCEDURE RELGET(VAR X11,X12,ALT:REAL; VAR IR:INTEGER;
            VAR ZG,PR,RMIN:REAL); FORTRAN;
+PROCEDURE ZEM(VAR X11,X12,ZG:REAL); FORTRAN;
 PROCEDURE MNPRS(VAR X11,X12,ALT,T:REAL); FORTRAN;
 PROCEDURE STK(VAR X0,Y0,H0,X1,Y1,H1:REAL; VAR IST:INTEGER;
            VAR XK,YK,HK:REAL); FORTRAN;
@@ -271,45 +272,52 @@ BEGIN
 END;
 (************************************************************)
 PROCEDURE PRFRM;
-VAR I,J,IH,JA,IB:INTEGER; HGL:REAL;
+VAR I,J,IH,JA,IB:INTEGER; HGL,ZGL,XX:REAL;
 BEGIN
   GLANG(X,TH,GA,PS,DTM,EGLI,IPOS);
   GLVOD(VA,ALF);
+  RELGET(X[11],X[12],X[13],IREL,ZG,PR,RMIN);
   IB:=21+TRUNC(X[12]/5.0);
   IF IB<1 THEN IB:=1;
   IF IB>41 THEN IB:=41;
+  JA:=31-TRUNC(DTM/500.0);
   WRITELN;
   WRITELN('T=',T:7:1,' TIP=',KTIP:1,' DALN=',DTM:7:0,
           ' VYS=',X[13]:7:1,' Y=',X[12]:7:1);
-  WRITELN(' VYS PROFILE             | PLAN SVERHU');
-  JA:=31-TRUNC(DTM/500.0);
-  FOR IH:=8 DOWNTO 0 DO
+  WRITELN(' VYS PROFILE             + PLAN SVERHU');
+  FOR IH:=12 DOWNTO 0 DO
   BEGIN
-    WRITE(' ',IH*100:4,' |');
+    WRITE(' ',IH*100:4,' +');
     FOR J:=1 TO 30 DO
     BEGIN
       HGL:=0.05241*(31-J)*500.0;
+      ZGL:=-1.0;
+      IF IREL=1 THEN
+      BEGIN
+        XX:=-(31-J)*500.0;
+        ZEM(XX,X[12],ZGL)
+      END;
       IF (IH=TRUNC(X[13]/100.0)) AND (J=JA) THEN WRITE('*')
+      ELSE IF (IREL=1) AND (IH=TRUNC(ZGL/100.0)) THEN WRITE('T')
       ELSE IF TRUNC(HGL/100.0)=IH THEN WRITE('.')
       ELSE IF IH=0 THEN WRITE('=')
       ELSE WRITE(' ')
     END;
-    WRITE(' |');
-    IF IH=8 THEN
+    WRITE(' +');
+    IF IH=12 THEN
     BEGIN
-      WRITE('    |====|');
+      WRITE('    +====+');
       FOR J:=1 TO IB DO WRITE(' ');
       WRITE('*'); WRITELN
     END
-    ELSE IF IH=0 THEN WRITELN('    |====|')
-    ELSE WRITELN('    |    |')
+    ELSE IF IH=0 THEN WRITELN('    +====+')
+    ELSE WRITELN('    +    +')
   END;
   WRITELN('     15KM  10KM  5KM  0');
-  WRITELN(' GLISS 3 GR |----*----| EGLI=',EGLI:7:1,' M');
-  WRITELN(' KURS LUCH |----*----| Y=',X[12]:7:1,' M');
+  WRITELN(' GLISS 3 GR +----*----+ EGLI=',EGLI:7:1,' M');
+  WRITELN(' KURS LUCH +----*----+ Y=',X[12]:7:1,' M');
   WRITELN(' SKOR=',VA:6:1,' VERT=',X[2]:6:2,
           ' ATAKA=',ALF:5:1,' TYAG=',100*U[4]:3:0);
-  RELGET(X[11],X[12],X[13],IREL,ZG,PR,RMIN);
   IF IREL=1 THEN
     WRITELN(' ZEMLYA=',ZG:7:1,' PROSVET=',PR:7:1,' MIN=',RMIN:7:1)
 END;
