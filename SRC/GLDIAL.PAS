@@ -26,6 +26,7 @@ var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     MANUAL:boolean; DE,DA,DR,DTZ:real;
     IPILOT,NPILOT:integer; (* 0 - выкл., >0 - шаги запроса *)
     HPAGE:integer; (* номер страницы справки HLP *)
+    HOTKEY:boolean; (* однолитерные алиасы включены *)
     PILPAZ:boolean; (* мы стоим в пилотной паузе *)
     RABS:real; (* число из абсолютной команды *)
     RECON:boolean; NFRMX,NEVMX,NSTEP,IEVK:integer;
@@ -195,7 +196,8 @@ end;
 procedure ASK;
 begin
   writeln;
-  write('> ');
+  (* В пилотном режиме одна литера приглашения вместо двух знаков. *)
+  if IMODE=0 then write('>') else write('> ');
   B.BUFLEN:=80; B.INPLEN:=0;
   PASRED(B)
 end;
@@ -516,6 +518,13 @@ begin
     writeln('PAR ПАРАМЕТРЫ И ПЕРЕЗАПУСК  PRN КАДР');
     writeln('AUTO АВТОПИЛОТ: РУЛИ В НУЛЬ  INS ИНСТРУКТОР');
     writeln('EXIT ВЫХОД');
+    if HOTKEY then
+    begin
+      writeln('ГОРЯЧИЕ КЛАВИШИ: ОДНА ЛИТЕРА + ENTER');
+      writeln('E/Q ВЫСОТА  W/S ЭЛЕРОНЫ  A/D НАПР.  R/F ТЯГА');
+      writeln('X ПАУЗА  P КАДР  N НЕЙТРАЛЬ  T ТРИМ');
+      writeln('1/2/3 СПРАВКА; ПОЛНЫЙ ВВОД ТОЖЕ РАБОТАЕТ')
+    end;
     writeln('EV+ EV- DE РУЛЬ ВЫСОТЫ ШАГ 0.05 ПРЕДЕЛ +/-0.30');
     writeln('AI+ AI- DA ЭЛЕРОНЫ  ШАГ 0.05 ПРЕДЕЛ +/-0.15');
     writeln('RU+ RU- DR РУЛЬ НАПР. ШАГ 0.05 ПРЕДЕЛ +/-0.20');
@@ -588,7 +597,8 @@ begin
   begin
     writeln('PIL: STA STE STO PAR PRN AUTO INS EXIT');
     writeln('MAN: EV+ EV- AI+ AI- RU+ RU- TH+ TH-');
-    writeln('     DE=Z DA=Z DR=Z TH=Z TRIM NEUT')
+    writeln('     DE=Z DA=Z DR=Z TH=Z TRIM NEUT');
+    if HOTKEY then writeln('ЛИТЕРЫ: E Q W S A D R F X P N T 1 2 3')
   end
   else
     writeln('INS: SEL/FRZ/UNF/INJ/EPS/REC/RPL/RST/SCR');
@@ -615,7 +625,27 @@ begin
       if B.INPLEN>=5 then
         if (B.A[4]=' ') and (B.A[5]>='1') and (B.A[5]<='3') then
           HPAGE:=ord(B.A[5])-48
-    end
+    end;
+  (* Горячие клавиши БЭСМ-6: одна литера + Enter -> полная команда. *)
+  (* Многолитерный ввод не меняем: здесь только INPLEN=1.          *)
+  if HOTKEY and (B.INPLEN=1) then
+  begin
+    if CMD='E     ' then CMD:='EV+   '
+    else if CMD='Q     ' then CMD:='EV-   '
+    else if CMD='W     ' then CMD:='AI+   '
+    else if CMD='S     ' then CMD:='AI-   '
+    else if CMD='A     ' then CMD:='RU+   '
+    else if CMD='D     ' then CMD:='RU-   '
+    else if CMD='R     ' then CMD:='TH+   '
+    else if CMD='F     ' then CMD:='TH-   '
+    else if CMD='X     ' then CMD:='STO   '
+    else if CMD='P     ' then CMD:='PRN   '
+    else if CMD='N     ' then CMD:='NEUT  '
+    else if CMD='T     ' then CMD:='TRIM  '
+    else if CMD='1     ' then begin CMD:='HLP   '; HPAGE:=1 end
+    else if CMD='2     ' then begin CMD:='HLP   '; HPAGE:=2 end
+    else if CMD='3     ' then begin CMD:='HLP   '; HPAGE:=3 end
+  end
 end;
 (************************************************************)
 begin
@@ -625,6 +655,7 @@ begin
   IMODE:=0; IEX:=1;
   IPILOT:=0; NPILOT:=10; (* запрос к пилоту по умолчанию выключен *)
   HPAGE:=1; (* справка по умолчанию открывает первую страницу *)
+  HOTKEY:=true; (* алиасы включены; false выключает их целиком *)
   PILPAZ:=false;
   EXKTIP[1]:=3; EXSIGW[1]:=0.0; EXRSEED[1]:=7351.0;
   EXDT0[1]:=0.60; EXTMAX[1]:=2400.0;

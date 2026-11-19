@@ -37,6 +37,7 @@ VAR X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     MANUAL:BOOLEAN; DE,DA,DR,DTZ:REAL;
     IPILOT,NPILOT:INTEGER; (* 0 - ВЫКЛ., >0 - ШАГИ ЗАПРОСА *)
     HPAGE:INTEGER; (* НОМЕР СТРАНИЦЫ СПРАВКИ HLP *)
+    HOTKEY:BOOLEAN; (* ОДНОЛИТЕРНЫЕ АЛИАСЫ ВКЛЮЧЕНЫ *)
     PILPAZ:BOOLEAN; (* МЫ СТОИМ В ПИЛОТНОЙ ПАУЗЕ *)
     RABS:REAL; (* ЧИСЛО ИЗ АБСОЛЮТНОЙ КОМАНДЫ *)
     RECON:BOOLEAN; NFRMX,NEVMX,NSTEP,IEVK:INTEGER;
@@ -206,7 +207,8 @@ END;
 PROCEDURE ASK;
 BEGIN
   WRITELN;
-  WRITE('> ');
+  (* В ПИЛОТНОМ РЕЖИМЕ ОДНА ЛИТЕРА ПРИГЛАШЕНИЯ ВМЕСТО ДВУХ ЗНАКОВ. *)
+  IF IMODE=0 THEN WRITE('>') ELSE WRITE('> ');
   B.BUFLEN:=80; B.INPLEN:=0;
   PASRED(B)
 END;
@@ -527,6 +529,13 @@ BEGIN
     WRITELN('PAR ПАРАМЕТРЫ И ПЕРЕЗАПУСК  PRN КАДР');
     WRITELN('AUTO АВТОПИЛОТ: РУЛИ В НУЛЬ  INS ИНСТРУКТОР');
     WRITELN('EXIT ВЫХОД');
+    IF HOTKEY THEN
+    BEGIN
+      WRITELN('ГОРЯЧИЕ КЛАВИШИ: ОДНА ЛИТЕРА + ENTER');
+      WRITELN('E/Q ВЫСОТА  W/S ЭЛЕРОНЫ  A/D НАПР.  R/F ТЯГА');
+      WRITELN('X ПАУЗА  P КАДР  N НЕЙТРАЛЬ  T ТРИМ');
+      WRITELN('1/2/3 СПРАВКА; ПОЛНЫЙ ВВОД ТОЖЕ РАБОТАЕТ')
+    END;
     WRITELN('EV+ EV- DE РУЛЬ ВЫСОТЫ ШАГ 0.05 ПРЕДЕЛ +/-0.30');
     WRITELN('AI+ AI- DA ЭЛЕРОНЫ  ШАГ 0.05 ПРЕДЕЛ +/-0.15');
     WRITELN('RU+ RU- DR РУЛЬ НАПР. ШАГ 0.05 ПРЕДЕЛ +/-0.20');
@@ -599,7 +608,8 @@ BEGIN
   BEGIN
     WRITELN('PIL: STA STE STO PAR PRN AUTO INS EXIT');
     WRITELN('MAN: EV+ EV- AI+ AI- RU+ RU- TH+ TH-');
-    WRITELN('     DE=Z DA=Z DR=Z TH=Z TRIM NEUT')
+    WRITELN('     DE=Z DA=Z DR=Z TH=Z TRIM NEUT');
+    IF HOTKEY THEN WRITELN('ЛИТЕРЫ: E Q W S A D R F X P N T 1 2 3')
   END
   ELSE
     WRITELN('INS: SEL/FRZ/UNF/INJ/EPS/REC/RPL/RST/SCR');
@@ -626,7 +636,27 @@ BEGIN
       IF B.INPLEN>=5 THEN
         IF (B.A[4]=' ') AND (B.A[5]>='1') AND (B.A[5]<='3') THEN
           HPAGE:=ORD(B.A[5])-48
-    END
+    END;
+  (* ГОРЯЧИЕ КЛАВИШИ БЭСМ-6: ОДНА ЛИТЕРА + ENTER -> ПОЛНАЯ КОМАНДА. *)
+  (* МНОГОЛИТЕРНЫЙ ВВОД НЕ МЕНЯЕМ: ЗДЕСЬ ТОЛЬКО INPLEN=1.          *)
+  IF HOTKEY AND (B.INPLEN=1) THEN
+  BEGIN
+    IF CMD='E     ' THEN CMD:='EV+   '
+    ELSE IF CMD='Q     ' THEN CMD:='EV-   '
+    ELSE IF CMD='W     ' THEN CMD:='AI+   '
+    ELSE IF CMD='S     ' THEN CMD:='AI-   '
+    ELSE IF CMD='A     ' THEN CMD:='RU+   '
+    ELSE IF CMD='D     ' THEN CMD:='RU-   '
+    ELSE IF CMD='R     ' THEN CMD:='TH+   '
+    ELSE IF CMD='F     ' THEN CMD:='TH-   '
+    ELSE IF CMD='X     ' THEN CMD:='STO   '
+    ELSE IF CMD='P     ' THEN CMD:='PRN   '
+    ELSE IF CMD='N     ' THEN CMD:='NEUT  '
+    ELSE IF CMD='T     ' THEN CMD:='TRIM  '
+    ELSE IF CMD='1     ' THEN BEGIN CMD:='HLP   '; HPAGE:=1 END
+    ELSE IF CMD='2     ' THEN BEGIN CMD:='HLP   '; HPAGE:=2 END
+    ELSE IF CMD='3     ' THEN BEGIN CMD:='HLP   '; HPAGE:=3 END
+  END
 END;
 (************************************************************)
 BEGIN
@@ -636,6 +666,7 @@ BEGIN
   IMODE:=0; IEX:=1;
   IPILOT:=0; NPILOT:=10; (* ЗАПРОС К ПИЛОТУ ПО УМОЛЧАНИЮ ВЫКЛЮЧЕН *)
   HPAGE:=1; (* СПРАВКА ПО УМОЛЧАНИЮ ОТКРЫВАЕТ ПЕРВУЮ СТРАНИЦУ *)
+  HOTKEY:=TRUE; (* АЛИАСЫ ВКЛЮЧЕНЫ; FALSE ВЫКЛЮЧАЕТ ИХ ЦЕЛИКОМ *)
   PILPAZ:=FALSE;
   EXKTIP[1]:=3; EXSIGW[1]:=0.0; EXRSEED[1]:=7351.0;
   EXDT0[1]:=0.60; EXTMAX[1]:=2400.0;
