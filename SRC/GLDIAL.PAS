@@ -24,6 +24,7 @@ var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     RECON:boolean; NFRMX,NEVMX,NSTEP,IEVK:integer;
     RX:VEC13; RU:VEC4; RT:real;
     XP,YP,HP,XK,YK,HK,ZG,PR,RMIN:real;
+    FCUR,FSTA,FWRN:real;
     IREL,IST:integer; RELHIT:boolean;
     SCVERT,SCTOCH,SCY,SCSKO,SCUPR,SCPLAV,SCTOT:real; SCZACH:integer;
     SCW1,SCW2,SCW3,SCW4,SCW5,SCW6,SCW7:real;
@@ -84,6 +85,10 @@ procedure GLANG(var X:VEC13; var TH,GA,PS,DTM,EG:real;
 procedure RELGET(var X11,X12,ALT:real; var IR:integer;
            var ZG,PR,RMIN:real); fortran;
 procedure ZEM(var X11,X12,ZG:real); fortran;
+(* запас топлива: расчёт в Фортране *)
+procedure FUELR(var U4,DT:real); fortran;
+procedure FUELRS; fortran;
+procedure FUELGT(var FCUR,FSTA,FWRN:real); fortran;
 procedure MNPRS(var X11,X12,ALT,T:real); fortran;
 procedure STK(var X0,Y0,H0,X1,Y1,H1:real; var IST:integer;
            var XK,YK,HK:real); fortran;
@@ -191,7 +196,7 @@ begin
 end;
 (************************************************************)
 procedure DOSTP;
-var I,IFAIL:integer;
+var I,IFAIL:integer; ZGL:real;
 begin
   XP:=X[11]; YP:=X[12]; HP:=X[13];
   if ICTRL<>3 then
@@ -218,6 +223,7 @@ begin
     end
     else for I:=1 to 4 do U[I]:=UHOLD[I]
   end;
+  FUELR(U[4],DTSH);
   SCPUT(U);
   TURB;
   if ICTRL=3 then
@@ -254,10 +260,46 @@ begin
   STK(XP,YP,HP,X[11],X[12],X[13],IST,XK,YK,HK);
   if IST=1 then
   begin
-    X[11]:=XK; X[12]:=YK; X[13]:=HK; RELHIT:=true
+    ZEM(XK,X[12],ZGL);
+    if ZGL>0.5 then
+    begin
+      X[11]:=XK; X[12]:=YK; X[13]:=HK; RELHIT:=true
+    end;
   end;
   NSTP:=NSTP+1;
   if RECON and (NSTP mod NSTEP=0) then RECPUT(X,U,T)
+end;
+(************************************************************)
+(* Пробелы до нужной позиции в строке кадра.                   *)
+procedure PAD(N:integer);
+var K:integer;
+begin
+  for K:=1 to N do write(' ')
+end;
+(************************************************************)
+(* Печать действительного числа в натуральном виде: знак,     *)
+(* целая часть, явная точка, один знак после запятой.         *)
+(* W - полная ширина поля вместе со знаком и точкой.          *)
+procedure PRNUM(R:real; W:integer);
+var N,IP,FP,S,WW,K,ND:integer;
+begin
+  S:=1;
+  if R<0.0 then S:=-1;
+  N:=TRUNC(ABS(R)*100.0+0.5);
+  IP:=N div 100;
+  FP:=N mod 100;
+  if S<0 then write('-') else write(' ');
+  write(IP:1);
+  write('.',FP:2);
+  ND:=1;
+  K:=IP div 10;
+  while K>0 do
+  begin
+    ND:=ND+1;
+    K:=K div 10
+  end;
+  WW:=W-3-ND;
+  for K:=1 to WW do write(' ')
 end;
 (************************************************************)
 procedure PRFRM;
@@ -266,6 +308,7 @@ begin
   GLANG(X,TH,GA,PS,DTM,EGLI,IPOS);
   GLVOD(VA,ALF);
   RELGET(X[11],X[12],X[13],IREL,ZG,PR,RMIN);
+  FUELGT(FCUR,FSTA,FWRN);
   IB:=21+TRUNC(X[12]/5.0);
   if IB<1 then IB:=1;
   if IB>41 then IB:=41;
@@ -303,12 +346,40 @@ begin
     else writeln('    +    +')
   end;
   writeln('     15km  10km  5km  0');
-  writeln(' GLISS 3 GR +----*----+ EGLI=',EGLI:7:1,' M');
-  writeln(' KURS LUCH +----*----+ Y=',X[12]:7:1,' M');
-  writeln(' SKOR=',VA:6:1,' VERT=',X[2]:6:2,
-          ' ATAKA=',ALF:5:1,' TYAG=',100*U[4]:3:0);
+  (* Нижние строки: две колонки по 38 знаков, между ними плюс. *)
+  (* Слева глиссада, курс, скорость; справа земля, просвет, минимум. *)
+  write(' GLISS 3 GR +----*----+ EGLI='); PRNUM(EGLI,7); write(' M');
+  write('+');
   if IREL=1 then
-    writeln(' ZEMLYA=',ZG:7:1,' PROSVET=',PR:7:1,' MIN=',RMIN:7:1)
+  begin
+    write(' ZEMLYA='); PAD(1); PRNUM(ZG,7); write(' M'); PAD(20)
+  end
+  else PAD(38);
+  writeln;
+  write(' KURS LUCH +----*----+ Y='); PAD(4); PRNUM(X[12],7);
+  write(' M');
+  write('+');
+  if IREL=1 then
+  begin
+    write(' PROSVET='); PRNUM(PR,7); write(' M'); PAD(20)
+  end
+  else PAD(38);
+  writeln;
+  write(' SKOR='); PAD(1); PRNUM(VA,7);
+  write(' VERT='); PAD(1); PRNUM(X[2],7); PAD(10);
+  write('+');
+  if IREL=1 then
+  begin
+    write(' MIN='); PAD(4); PRNUM(RMIN,7); write(' M'); PAD(20)
+  end
+  else PAD(38);
+  writeln;
+  write(' ATAKA='); PRNUM(ALF,7);
+  write(' TYAG='); PRNUM(100*U[4],7); PAD(11);
+  write('+');
+  write(' TOPLIVO='); PRNUM(FCUR,7); write(' KG');
+  PAD(19);
+  writeln
 end;
 (************************************************************)
 procedure SCRROW(NM:alfa; V,Q,W:real);
@@ -388,7 +459,7 @@ begin
   EXDT0[5]:=0.60; EXTMAX[5]:=2400.0;
   PARAMS;
   INIT;
-  PAUS:=true; RUN:=false; RELHIT:=false;
+  PAUS:=true; RUN:=false; RELHIT:=false; FUELRS;
   repeat
     if PAUS then
     begin

@@ -15,7 +15,7 @@ C==============================================================
       COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
       COMMON /SBSEED/ RSEED
       COMMON /SCHET/ SUME,NEGL
-      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RH(5,8),RELBX(8),RBH(5,8),
      1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
 C     КАРТА 1: ТИП,РЕЖИМ,КОНТРОЛЬ,ПЕЧАТЬ АЦПУ,БИБЛ.СБ  (5I5)
       ERMAX=0.
@@ -59,6 +59,9 @@ C     НАЧАЛЬНЫЕ УСЛОВИЯ: ВХОД В ГЛИССАДУ, 15 КМ �
       NPRINT=IFIX(FLOAT(NFR)/DTSHAG)
       IF(NPRINT.LT.1) NPRINT=999999
       NMAX=IFIX(TMAX/DTSHAG)
+C     ПАРАМЕТРЫ ТЕКУЩЕГО ТИПА ЗАГРУЖЕНЫ В /FUELP/ ИЗ /TTXDAT/.
+C     СБРОС ЗАПАСА ТОПЛИВА В НАЧАЛЕ ПРОГОНА.
+      CALL FUELRS
       DO 1100 NSTEP=1,NMAX
       T=T+DTSHAG
       IF(MODE.EQ.1) CALL GLAUTO(X,U)
@@ -73,6 +76,8 @@ C     ПРОШЛАЯ ПОЗИЦИЯ ДЛЯ ПРОВЕРКИ ПРОЙДЕННОГ
       XP=X(11)
       YP=X(12)
       HP=X(13)
+C     СПИСАНИЕ ТОПЛИВА ЗА ШАГ ДО РАСЧЁТА ПРАВЫХ ЧАСТЕЙ.
+      CALL FUELR(U(4),DTSHAG)
       CALL PROIZV(X,U,K1)
       DO 100 I=1,13
   100 X1(I)=X(I)+0.5*DTSHAG*K1(I)

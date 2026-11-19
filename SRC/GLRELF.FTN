@@ -6,27 +6,49 @@ C     IREL=0 - РЕЛЬЕФ ОТКЛЮЧЕН: ЗЕМЛЯ НУЛЕВАЯ, ПРО�
 C              КАСАНИЕ ПО X(13)<=HCR. РЕГРЕССИЯ НЕ МЕНЯЕТСЯ.
 C     IREL=1 - КУСОЧНО-ЛИНЕЙНЫЙ ПРОДОЛЬНЫЙ ПРОФИЛЬ ПО X(11)
 C              ПЛЮС АДДИТИВНАЯ ПОПРАВКА ПО X(12).
+C     ТИП САМОЛЁТА БЕРЁТСЯ ИЗ БЛОКА /GLOB/: 1-МИГ-15, 2-ИЛ-28,
+C              3-ТУ-104, 4-АН-24, 5-АН-2. ВЫСОТЫ И ПОПРАВКИ
+C              БЕРУТСЯ ИЗ СООТВЕТСТВУЮЩЕЙ СТРОКИ МАССИВОВ.
+C     ВСЕ ПРОФИЛИ - УЧЕБНЫЕ ОЦЕНКИ ПО ОТКРЫТЫМ ИСТОЧНИКАМ.
 C     ПРОЦЕДУРЫ: ZEM - ВЫСОТА ЗЕМЛИ, PRS - ПРОСВЕТ,
 C                STK - ПРОВЕРКА ОТРЕЗКА, MNPRS - МИНИМУМ ПРОСВЕТА,
 C                STKPRT - ДИАГНОСТИКА КАСАНИЯ, MNPRT - ПЕЧАТЬ МИНИМУМА.
 C==============================================================
       BLOCK DATA RELBLK
-      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RH(5,8),RELBX(8),RBH(5,8),
      1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
 C     IREL - ВКЛЮЧЕНИЕ РЕЛЬЕФА: 0 ОТКЛЮЧЕН, 1 ВКЛЮЧЕН.
 C     NRL,NRB - ЧИСЛО УЗЛОВ ПРОДОЛЬНОГО И ПОПЕРЕЧНОГО ПРОФИЛЕЙ.
-C     RELX,RELH - КООРДИНАТА И ВЫСОТА УЗЛОВ ПРОДОЛЬНОГО ПРОФИЛЯ.
-C     RELBX,RELBH - КООРДИНАТА И ПОПРАВКА УЗЛОВ ПОПЕРЕЧНОГО ПРОФИЛЯ.
+C     RELX,RELBX - ОБЩИЕ КООРДИНАТЫ УЗЛОВ ОБОИХ ПРОФИЛЕЙ.
+C     RH,RBH - ВЫСОТА И ПОПРАВКА: ПЕРВЫЙ ИНДЕКС - ТИП САМОЛЁТА,
+C              ВТОРОЙ - НОМЕР УЗЛА. ПЯТЬ ТИПОВ ПО ВОСЕМЬ УЗЛОВ.
+C     ТИПЫ: 1-МИГ-15, 2-ИЛ-28, 3-ТУ-104, 4-АН-24, 5-АН-2.
 C     RDT - ПРЕДЕЛЬНЫЙ ШАГ ПО ПУТИ ПРИ ПРОВЕРКЕ ОТРЕЗКА, М.
 C     RTHR - ЧИСЛОВАЯ МАРЖА ПРИ СРАВНЕНИИ ПРОСВЕТА С HCR, М.
 C     REPS - ЧИСЛОВАЯ МАРЖА ДЛЯ ГРАНИЦ УЗЛОВ.
 C     RWARN,RCRIT - УЧЕБНЫЕ ПОРОГИ ПРЕДУПРЕЖДЕНИЯ, М.
 C     RMINP,RMN11,RMN12,RMNT,IMNFL - НАКОПЛЕННЫЙ МИНИМУМ ПРОСВЕТА.
-      DATA IREL/0/,NRL/8/,NRB/8/,IMNFL/0/
+      DATA IREL/1/,NRL/8/,NRB/8/,IMNFL/0/
       DATA RELX/-15000.,-6000.,-3000.,-2000.,-1200.,-700.,-250.,0./
-      DATA RELH/0.,0.,60.,220.,360.,150.,30.,0./
-      DATA RELBX/-3000.,-2350.,-1700.,-800.,0.,800.,1700.,3000./
-      DATA RELBH/0.,140.,20.,0.,0.,0.,15.,25./
+      DATA RELBX/-3000.,-2350.,-1700.,-800.,0.,234.,1700.,3000./
+C     ДАННЫЕ ЗАПИСАНЫ ПО СТОЛБЦАМ: СНАЧАЛА ПЯТЬ ТИПОВ ДЛЯ УЗЛА 1,
+C     ЗАТЕМ ДЛЯ УЗЛА 2 И ТАК ДАЛЕЕ (ПОРЯДОК ХРАНЕНИЯ ФОРТРАНА).
+      DATA RH/140.,121.,0.,0.,4.,
+     1 40.,51.,-10.,0.,3.,
+     2 10.,26.,15.,0.,2.,
+     3 3.,19.,8.,0.,1.,
+     4 0.,11.,8.,0.,0.5,
+     5 -2.,4.,0.,0.,0.,
+     6 -1.,0.,0.,0.,-0.5,
+     7 0.,0.,0.,0.,0./
+      DATA RBH/0.,368.,0.,0.,0.5,
+     1 0.,415.,0.,0.,0.,
+     2 0.,205.,0.,0.,0.,
+     3 0.,40.,0.,0.,0.,
+     4 0.,0.,0.,0.,0.,
+     5 0.,4.,0.,6.,0.,
+     6 0.,34.,0.,0.,0.,
+     7 0.,20.,0.,0.,0.5/
       DATA RDT/7./,RTHR/1.E-6/,REPS/1.E-9/
       DATA RWARN/30./,RCRIT/10./
       DATA RMINP/0./,RMN11/0./,RMN12/0./,RMNT/0./
@@ -34,35 +56,36 @@ C     RMINP,RMN11,RMN12,RMNT,IMNFL - НАКОПЛЕННЫЙ МИНИМУМ ПР�
 C--------------------------------------------------------------
 C     ВЫСОТА ЗЕМЛИ В ТОЧКЕ X(11),X(12). ПРИ IREL=0 РАВНА НУЛЮ.
       SUBROUTINE ZEM(X11,X12,ZG)
-      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RH(5,8),RELBX(8),RBH(5,8),
      1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
       ZG=0.
       IF(IREL.EQ.0) RETURN
-C     ПРОДОЛЬНЫЙ ПРОФИЛЬ.
-      ZH=RELH(1)
+C     ПРОДОЛЬНЫЙ ПРОФИЛЬ ДЛЯ ТИПА KTIP.
+      ZH=RH(KTIP,1)
       IF(X11.LE.RELX(1)) GO TO 30
       IF(X11.GE.RELX(NRL)) GO TO 20
       NL=NRL-1
       DO 10 I=1,NL
         IF(X11.GT.RELX(I+1)) GO TO 10
         F=(X11-RELX(I))/(RELX(I+1)-RELX(I))
-        ZH=RELH(I)+F*(RELH(I+1)-RELH(I))
+        ZH=RH(KTIP,I)+F*(RH(KTIP,I+1)-RH(KTIP,I))
         GO TO 30
    10 CONTINUE
-   20 ZH=RELH(NRL)
+   20 ZH=RH(KTIP,NRL)
    30 CONTINUE
 C     АДДИТИВНАЯ ПОПРАВКА ПО ПОПЕРЕЧНОЙ КООРДИНАТЕ.
-      ZB=RELBH(1)
+      ZB=RBH(KTIP,1)
       IF(X12.LE.RELBX(1)) GO TO 60
       IF(X12.GE.RELBX(NRB)) GO TO 50
       NB=NRB-1
       DO 40 I=1,NB
         IF(X12.GT.RELBX(I+1)) GO TO 40
         F=(X12-RELBX(I))/(RELBX(I+1)-RELBX(I))
-        ZB=RELBH(I)+F*(RELBH(I+1)-RELBH(I))
+        ZB=RBH(KTIP,I)+F*(RBH(KTIP,I+1)-RBH(KTIP,I))
         GO TO 60
    40 CONTINUE
-   50 ZB=RELBH(NRB)
+   50 ZB=RBH(KTIP,NRB)
    60 ZG=ZH+ZB
       END
 C--------------------------------------------------------------
@@ -75,7 +98,7 @@ C     ПРИ IREL=0 ПРОСВЕТ РАВЕН X(13).
 C--------------------------------------------------------------
 C     МИНИМУМ ПРОСВЕТА ЗА ПРОГОН. ПРИ IREL=0 НИЧЕГО НЕ НАКАПЛИВАЕТ.
       SUBROUTINE MNPRS(X11,X12,ALT,T)
-      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RH(5,8),RELBX(8),RBH(5,8),
      1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
       IF(IREL.EQ.0) RETURN
       CALL PRS(X11,X12,ALT,P)
@@ -97,7 +120,7 @@ C     ВКЛЮЧАЮТСЯ УЗЛЫ ОБОИХ ПРОФИЛЕЙ ВНУТРИ О�
 C     КАСАНИЕ УТОЧНЯЕТСЯ ДЕЛЕНИЕМ ИНТЕРВАЛА ПОПОЛАМ.
       SUBROUTINE STK(X0,Y0,H0,X1,Y1,H1,IST,XK,YK,HK)
       DIMENSION FRAC(48)
-      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RH(5,8),RELBX(8),RBH(5,8),
      1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
       COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
      1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
@@ -186,7 +209,7 @@ C     ДИАГНОСТИКА КАСАНИЯ С ЗЕМЛЁЙ.
 C--------------------------------------------------------------
 C     ПЕЧАТЬ МИНИМАЛЬНОГО ПРОСВЕТА В КОНЦЕ ПРОГОНА.
       SUBROUTINE MNPRT
-      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RH(5,8),RELBX(8),RBH(5,8),
      1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
       IF(IREL.EQ.0) RETURN
       IF(IMNFL.EQ.0) RETURN
@@ -198,7 +221,7 @@ C--------------------------------------------------------------
 C     АКСЕССОР ДЛЯ ПАСКАЛЬ-ОБОЛОЧКИ: ПРИЗНАК, ЗЕМЛЯ, ПРОСВЕТ,
 C     МИНИМАЛЬНЫЙ ПРОСВЕТ ЗА ПРОГОН.
       SUBROUTINE RELGET(X11,X12,ALT,IR,ZG,PR,RMIN)
-      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RH(5,8),RELBX(8),RBH(5,8),
      1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
       IR=IREL
       CALL ZEM(X11,X12,ZG)

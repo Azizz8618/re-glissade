@@ -1,0 +1,38 @@
+C==============================================================
+C     ГЛИССАДА-6. МОДЕЛЬ ЗАПАСА ТОПЛИВА И ЕГО РАСХОДА.
+C     ПАРАМЕТРЫ ПО ТИПАМ ЛЕЖАТ В /TTXDAT/ (SRC/GLTTX.FTN):
+C     TFU0 - ЗАПАС, КГ; TFR - РАСХОД ПРИ ТЯГЕ 1, КГ/С;
+C     TFW - ПОРОГ ПРЕДУПРЕЖДЕНИЯ, ДОЛЯ ОТ ЗАПАСА.
+C     INITD ПЕРЕНОСИТ ИХ В СКАЛЯРЫ FUEL0,FRATE,FWARN БЛОКА /FUELP/.
+C     FUEL - ТЕКУЩИЙ ЗАПАС, КГ; FMIN - НИЖНИЙ ПРЕДЕЛ ЗАПАСА, КГ.
+C     ЗАПАС И ПРЕДЕЛ - СОСТОЯНИЕ ПРОГОНА, ТОЖЕ В /FUELP/.
+C==============================================================
+      BLOCK DATA GLFUEL
+      COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN
+      DATA FUEL/1200./
+      DATA FMIN/0./
+      END
+C     СПИСАНИЕ ТОПЛИВА ЗА ШАГ. U4 - ТЯГА U(4) В ДИАПАЗОНЕ 0..1,
+C     DT - ШАГ ИНТЕГРИРОВАНИЯ В СЕКУНДАХ. ПРИ ИСЧЕРПАНИИ ЗАПАСА
+C     ТЯГА ОБНУЛЯЕТСЯ, ТО ЕСТЬ ДВИГАТЕЛЬ ГЛОХНЕТ.
+      SUBROUTINE FUELR(U4,DT)
+      COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN
+      FUEL=FUEL-FRATE*U4*DT
+      IF(FUEL-FMIN) 10,10,20
+   10 FUEL=FMIN
+      U4=0.
+   20 CONTINUE
+      END
+C     СБРОС ЗАПАСА К НАЧАЛЬНОМУ ЗНАЧЕНИЮ В НАЧАЛЕ ПРОГОНА.
+      SUBROUTINE FUELRS
+      COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN
+      FUEL=FUEL0
+      END
+C     АКСЕССОР ДЛЯ ПАСКАЛЯ. FCUR,FSTA,FWRN - ВЫХОДНЫЕ ПАРАМЕТРЫ:
+C     ТЕКУЩИЙ ЗАПАС, НАЧАЛЬНЫЙ ЗАПАС И ПОРОГ ПРЕДУПРЕЖДЕНИЯ.
+      SUBROUTINE FUELGT(FCUR,FSTA,FWRN)
+      COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN
+      FCUR=FUEL
+      FSTA=FUEL0
+      FWRN=FWARN
+      END

@@ -19,6 +19,8 @@ C     TALFS - УГОЛ СРЫВА, ВЫЧИСЛЕН КАК (CLMX-CL0)/CLA.
 C     TCLS - КРУТИЗНА ПАДЕНИЯ CY ЗА СРЫВОМ.
 C     TTHI0/TTHI1/TTHV - ДРОССЕЛЬНАЯ ХАРАКТЕРИСТИКА ТРД.
 C     TPROPE - КОЭФФИЦИЕНТ ВИНТА (ИГРОВАЯ КАЛИБРОВКА).
+C     TFU0 - ЗАПАС, КГ; TFR - РАСХОД ПРИ ТЯГЕ 1, КГ/С;
+C     TFW - ПОРОГ ПРЕДУПРЕЖДЕНИЯ, ДОЛЯ ОТ ЗАПАСА.
 C     ОБОЗНАЧЕНИЯ: [Д] ДОКУМЕНТ, [Р] РАСЧЕТ, [О] ОЦЕНКА,
 C                  [И] ИГРОВАЯ КАЛИБРОВКА (СМ. DOCS/ANALYSIS/
 C                  TTX-AUDIT.MD).
@@ -30,7 +32,7 @@ C==============================================================
      1TCLP(5),TCNB(5),TCNDR(5),TCNR(5),TCYB(5),TETYPE(5),
      1TTHMAX(5),TPMAX(5),TVTHR(5),THCR(5),TJX(5),TJY(5),
      1TJZ(5),TALFS(5),TCLS(5),TTHI0(5),TTHI1(5),TTHV(5),TPROPE(5),
-     1TVAMIN
+     1TVAMIN,TFU0(5),TFR(5),TFW(5)
       DATA TGM /3915., 14750., 58000., 20000., 5250./
       DATA TS /20.6, 60.8, 344.6, 74.98, 71.52/
       DATA TBB /10.08, 21.45, 34.54, 29.2, 18.18/
@@ -66,6 +68,9 @@ C==============================================================
       DATA TTHV /0.0006, 0.0006, 0.0006, 0.0006, 0.0006/
       DATA TPROPE /1.6, 1.6, 1.6, 1.6, 1.6/
       DATA TVAMIN /30./
+      DATA TFU0 /1200., 4000., 12000., 3000., 600./
+      DATA TFR /0.4, 1.2, 4.0, 0.9, 0.2/
+      DATA TFW /0.2, 0.2, 0.2, 0.2, 0.2/
       END
 C==============================================================
 C     ГЛИССАДА-6. БЛОК УСИЛЕНИЙ АВТОПИЛОТА ПО ПОГОДЕ.
@@ -532,7 +537,7 @@ C==============================================================
 C==============================================================
 C     ГЛИССАДА-6. ИНИЦИАЛИЗАЦИЯ ТИПА САМОЛЕТА.
 C     ВСЕ ЧИСЛОВЫЕ ТТХ ВЫНЕСЕНЫ В SRC/GLTTX.FTN, БЛОК /TTXDAT/.
-C     ПРАВКИ ТТХ ДЕЛАТЬ ТАМ, ЗДЕСЬ ТОЛЬКО ПЕРЕНОС В /SOST/.
+C     ПРАВКИ ТТХ ДЕЛАТЬ ТАМ, ЗДЕСЬ ПЕРЕНОС В /SOST/ И /FUELP/.
 C==============================================================
       SUBROUTINE INITD(KTIP)
       COMMON /TTXDAT/ TGM(5),TS(5),TBB(5),TCC(5),TCL0(5),TCLA(5),
@@ -540,10 +545,11 @@ C==============================================================
      1TCLB(5),TCLDA(5),TCLP(5),TCNB(5),TCNDR(5),TCNR(5),TCYB(5),
      1TETYPE(5),TTHMAX(5),TPMAX(5),TVTHR(5),THCR(5),TJX(5),TJY(5),
      1TJZ(5),TALFS(5),TCLS(5),TTHI0(5),TTHI1(5),TTHV(5),TPROPE(5),
-     1TVAMIN
+     1TVAMIN,TFU0(5),TFR(5),TFW(5)
       COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
      1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
       COMMON /INERC/ JX,JY,JZ
+      COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN
       GM=TGM(KTIP)
       S=TS(KTIP)
       BB=TBB(KTIP)
@@ -572,6 +578,9 @@ C==============================================================
       JX=TJX(KTIP)
       JY=TJY(KTIP)
       JZ=TJZ(KTIP)
+      FUEL0=TFU0(KTIP)
+      FRATE=TFR(KTIP)
+      FWARN=TFW(KTIP)
       RETURN
       END
 C==============================================================
@@ -849,7 +858,7 @@ C==============================================================
       DIMENSION X(13),U(4),LINE(41)
       COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
       COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
-      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RH(5,8),RELBX(8),RBH(5,8),
      1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
       DATA NBLANK/1H /,NSTAR/1H*/
 C     ЭЙЛЕРОВЫ УГЛЫ ИЗ КВАТЕРНИОНА (ТАНГЕНСЫ ПОЛУ-УГЛОВ)
@@ -1017,27 +1026,49 @@ C     IREL=0 - РЕЛЬЕФ ОТКЛЮЧЕН: ЗЕМЛЯ НУЛЕВАЯ, ПРО�
 C              КАСАНИЕ ПО X(13)<=HCR. РЕГРЕССИЯ НЕ МЕНЯЕТСЯ.
 C     IREL=1 - КУСОЧНО-ЛИНЕЙНЫЙ ПРОДОЛЬНЫЙ ПРОФИЛЬ ПО X(11)
 C              ПЛЮС АДДИТИВНАЯ ПОПРАВКА ПО X(12).
+C     ТИП САМОЛЕТА БЕРЕТСЯ ИЗ БЛОКА /GLOB/: 1-МИГ-15, 2-ИЛ-28,
+C              3-ТУ-104, 4-АН-24, 5-АН-2. ВЫСОТЫ И ПОПРАВКИ
+C              БЕРУТСЯ ИЗ СООТВЕТСТВУЮЩЕЙ СТРОКИ МАССИВОВ.
+C     ВСЕ ПРОФИЛИ - УЧЕБНЫЕ ОЦЕНКИ ПО ОТКРЫТЫМ ИСТОЧНИКАМ.
 C     ПРОЦЕДУРЫ: ZEM - ВЫСОТА ЗЕМЛИ, PRS - ПРОСВЕТ,
 C                STK - ПРОВЕРКА ОТРЕЗКА, MNPRS - МИНИМУМ ПРОСВЕТА,
 C                STKPRT - ДИАГНОСТИКА КАСАНИЯ, MNPRT - ПЕЧАТЬ МИНИМУМА.
 C==============================================================
       BLOCK DATA RELBLK
-      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RH(5,8),RELBX(8),RBH(5,8),
      1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
 C     IREL - ВКЛЮЧЕНИЕ РЕЛЬЕФА: 0 ОТКЛЮЧЕН, 1 ВКЛЮЧЕН.
 C     NRL,NRB - ЧИСЛО УЗЛОВ ПРОДОЛЬНОГО И ПОПЕРЕЧНОГО ПРОФИЛЕЙ.
-C     RELX,RELH - КООРДИНАТА И ВЫСОТА УЗЛОВ ПРОДОЛЬНОГО ПРОФИЛЯ.
-C     RELBX,RELBH - КООРДИНАТА И ПОПРАВКА УЗЛОВ ПОПЕРЕЧНОГО ПРОФИЛЯ.
+C     RELX,RELBX - ОБЩИЕ КООРДИНАТЫ УЗЛОВ ОБОИХ ПРОФИЛЕЙ.
+C     RH,RBH - ВЫСОТА И ПОПРАВКА: ПЕРВЫЙ ИНДЕКС - ТИП САМОЛЕТА,
+C              ВТОРОЙ - НОМЕР УЗЛА. ПЯТЬ ТИПОВ ПО ВОСЕМЬ УЗЛОВ.
+C     ТИПЫ: 1-МИГ-15, 2-ИЛ-28, 3-ТУ-104, 4-АН-24, 5-АН-2.
 C     RDT - ПРЕДЕЛЬНЫЙ ШАГ ПО ПУТИ ПРИ ПРОВЕРКЕ ОТРЕЗКА, М.
 C     RTHR - ЧИСЛОВАЯ МАРЖА ПРИ СРАВНЕНИИ ПРОСВЕТА С HCR, М.
 C     REPS - ЧИСЛОВАЯ МАРЖА ДЛЯ ГРАНИЦ УЗЛОВ.
 C     RWARN,RCRIT - УЧЕБНЫЕ ПОРОГИ ПРЕДУПРЕЖДЕНИЯ, М.
 C     RMINP,RMN11,RMN12,RMNT,IMNFL - НАКОПЛЕННЫЙ МИНИМУМ ПРОСВЕТА.
-      DATA IREL/0/,NRL/8/,NRB/8/,IMNFL/0/
+      DATA IREL/1/,NRL/8/,NRB/8/,IMNFL/0/
       DATA RELX/-15000.,-6000.,-3000.,-2000.,-1200.,-700.,-250.,0./
-      DATA RELH/0.,0.,60.,220.,360.,150.,30.,0./
-      DATA RELBX/-3000.,-2350.,-1700.,-800.,0.,800.,1700.,3000./
-      DATA RELBH/0.,140.,20.,0.,0.,0.,15.,25./
+      DATA RELBX/-3000.,-2350.,-1700.,-800.,0.,234.,1700.,3000./
+C     ДАННЫЕ ЗАПИСАНЫ ПО СТОЛБЦАМ: СНАЧАЛА ПЯТЬ ТИПОВ ДЛЯ УЗЛА 1,
+C     ЗАТЕМ ДЛЯ УЗЛА 2 И ТАК ДАЛЕЕ (ПОРЯДОК ХРАНЕНИЯ ФОРТРАНА).
+      DATA RH/140.,121.,0.,0.,4.,
+     1 40.,51.,-10.,0.,3.,
+     2 10.,26.,15.,0.,2.,
+     3 3.,19.,8.,0.,1.,
+     4 0.,11.,8.,0.,0.5,
+     5 -2.,4.,0.,0.,0.,
+     6 -1.,0.,0.,0.,-0.5,
+     7 0.,0.,0.,0.,0./
+      DATA RBH/0.,368.,0.,0.,0.5,
+     1 0.,415.,0.,0.,0.,
+     2 0.,205.,0.,0.,0.,
+     3 0.,40.,0.,0.,0.,
+     4 0.,0.,0.,0.,0.,
+     5 0.,4.,0.,6.,0.,
+     6 0.,34.,0.,0.,0.,
+     7 0.,20.,0.,0.,0.5/
       DATA RDT/7./,RTHR/1.E-6/,REPS/1.E-9/
       DATA RWARN/30./,RCRIT/10./
       DATA RMINP/0./,RMN11/0./,RMN12/0./,RMNT/0./
@@ -1045,35 +1076,36 @@ C     RMINP,RMN11,RMN12,RMNT,IMNFL - НАКОПЛЕННЫЙ МИНИМУМ ПР�
 C--------------------------------------------------------------
 C     ВЫСОТА ЗЕМЛИ В ТОЧКЕ X(11),X(12). ПРИ IREL=0 РАВНА НУЛЮ.
       SUBROUTINE ZEM(X11,X12,ZG)
-      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RH(5,8),RELBX(8),RBH(5,8),
      1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
+      COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
       ZG=0.
       IF(IREL.EQ.0) RETURN
-C     ПРОДОЛЬНЫЙ ПРОФИЛЬ.
-      ZH=RELH(1)
+C     ПРОДОЛЬНЫЙ ПРОФИЛЬ ДЛЯ ТИПА KTIP.
+      ZH=RH(KTIP,1)
       IF(X11.LE.RELX(1)) GO TO 30
       IF(X11.GE.RELX(NRL)) GO TO 20
       NL=NRL-1
       DO 10 I=1,NL
         IF(X11.GT.RELX(I+1)) GO TO 10
         F=(X11-RELX(I))/(RELX(I+1)-RELX(I))
-        ZH=RELH(I)+F*(RELH(I+1)-RELH(I))
+        ZH=RH(KTIP,I)+F*(RH(KTIP,I+1)-RH(KTIP,I))
         GO TO 30
    10 CONTINUE
-   20 ZH=RELH(NRL)
+   20 ZH=RH(KTIP,NRL)
    30 CONTINUE
 C     АДДИТИВНАЯ ПОПРАВКА ПО ПОПЕРЕЧНОЙ КООРДИНАТЕ.
-      ZB=RELBH(1)
+      ZB=RBH(KTIP,1)
       IF(X12.LE.RELBX(1)) GO TO 60
       IF(X12.GE.RELBX(NRB)) GO TO 50
       NB=NRB-1
       DO 40 I=1,NB
         IF(X12.GT.RELBX(I+1)) GO TO 40
         F=(X12-RELBX(I))/(RELBX(I+1)-RELBX(I))
-        ZB=RELBH(I)+F*(RELBH(I+1)-RELBH(I))
+        ZB=RBH(KTIP,I)+F*(RBH(KTIP,I+1)-RBH(KTIP,I))
         GO TO 60
    40 CONTINUE
-   50 ZB=RELBH(NRB)
+   50 ZB=RBH(KTIP,NRB)
    60 ZG=ZH+ZB
       END
 C--------------------------------------------------------------
@@ -1086,7 +1118,7 @@ C     ПРИ IREL=0 ПРОСВЕТ РАВЕН X(13).
 C--------------------------------------------------------------
 C     МИНИМУМ ПРОСВЕТА ЗА ПРОГОН. ПРИ IREL=0 НИЧЕГО НЕ НАКАПЛИВАЕТ.
       SUBROUTINE MNPRS(X11,X12,ALT,T)
-      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RH(5,8),RELBX(8),RBH(5,8),
      1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
       IF(IREL.EQ.0) RETURN
       CALL PRS(X11,X12,ALT,P)
@@ -1108,7 +1140,7 @@ C     ВКЛЮЧАЮТСЯ УЗЛЫ ОБОИХ ПРОФИЛЕЙ ВНУТРИ О�
 C     КАСАНИЕ УТОЧНЯЕТСЯ ДЕЛЕНИЕМ ИНТЕРВАЛА ПОПОЛАМ.
       SUBROUTINE STK(X0,Y0,H0,X1,Y1,H1,IST,XK,YK,HK)
       DIMENSION FRAC(48)
-      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RH(5,8),RELBX(8),RBH(5,8),
      1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
       COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
      1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
@@ -1197,7 +1229,7 @@ C     WRITE(6,916) XK,YK,HK
 C--------------------------------------------------------------
 C     ПЕЧАТЬ МИНИМАЛЬНОГО ПРОСВЕТА В КОНЦЕ ПРОГОНА.
       SUBROUTINE MNPRT
-      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RH(5,8),RELBX(8),RBH(5,8),
      1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
       IF(IREL.EQ.0) RETURN
       IF(IMNFL.EQ.0) RETURN
@@ -1209,12 +1241,50 @@ C--------------------------------------------------------------
 C     АКСЕССОР ДЛЯ ПАСКАЛЬ-ОБОЛОЧКИ: ПРИЗНАК, ЗЕМЛЯ, ПРОСВЕТ,
 C     МИНИМАЛЬНЫЙ ПРОСВЕТ ЗА ПРОГОН.
       SUBROUTINE RELGET(X11,X12,ALT,IR,ZG,PR,RMIN)
-      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RH(5,8),RELBX(8),RBH(5,8),
      1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
       IR=IREL
       CALL ZEM(X11,X12,ZG)
       PR=ALT-ZG
       RMIN=RMINP
+      END
+C==============================================================
+C     ГЛИССАДА-6. МОДЕЛЬ ЗАПАСА ТОПЛИВА И ЕГО РАСХОДА.
+C     ПАРАМЕТРЫ ПО ТИПАМ ЛЕЖАТ В /TTXDAT/ (SRC/GLTTX.FTN):
+C     TFU0 - ЗАПАС, КГ; TFR - РАСХОД ПРИ ТЯГЕ 1, КГ/С;
+C     TFW - ПОРОГ ПРЕДУПРЕЖДЕНИЯ, ДОЛЯ ОТ ЗАПАСА.
+C     INITD ПЕРЕНОСИТ ИХ В СКАЛЯРЫ FUEL0,FRATE,FWARN БЛОКА /FUELP/.
+C     FUEL - ТЕКУЩИЙ ЗАПАС, КГ; FMIN - НИЖНИЙ ПРЕДЕЛ ЗАПАСА, КГ.
+C     ЗАПАС И ПРЕДЕЛ - СОСТОЯНИЕ ПРОГОНА, ТОЖЕ В /FUELP/.
+C==============================================================
+      BLOCK DATA GLFUEL
+      COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN
+      DATA FUEL/1200./
+      DATA FMIN/0./
+      END
+C     СПИСАНИЕ ТОПЛИВА ЗА ШАГ. U4 - ТЯГА U(4) В ДИАПАЗОНЕ 0..1,
+C     DT - ШАГ ИНТЕГРИРОВАНИЯ В СЕКУНДАХ. ПРИ ИСЧЕРПАНИИ ЗАПАСА
+C     ТЯГА ОБНУЛЯЕТСЯ, ТО ЕСТЬ ДВИГАТЕЛЬ ГЛОХНЕТ.
+      SUBROUTINE FUELR(U4,DT)
+      COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN
+      FUEL=FUEL-FRATE*U4*DT
+      IF(FUEL-FMIN) 10,10,20
+   10 FUEL=FMIN
+      U4=0.
+   20 CONTINUE
+      END
+C     СБРОС ЗАПАСА К НАЧАЛЬНОМУ ЗНАЧЕНИЮ В НАЧАЛЕ ПРОГОНА.
+      SUBROUTINE FUELRS
+      COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN
+      FUEL=FUEL0
+      END
+C     АКСЕССОР ДЛЯ ПАСКАЛЯ. FCUR,FSTA,FWRN - ВЫХОДНЫЕ ПАРАМЕТРЫ:
+C     ТЕКУЩИЙ ЗАПАС, НАЧАЛЬНЫЙ ЗАПАС И ПОРОГ ПРЕДУПРЕЖДЕНИЯ.
+      SUBROUTINE FUELGT(FCUR,FSTA,FWRN)
+      COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN
+      FCUR=FUEL
+      FSTA=FUEL0
+      FWRN=FWARN
       END
 *to perso:402700
 *end file

@@ -6,7 +6,7 @@ C==============================================================
       DIMENSION X(13),U(4),LINE(41)
       COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
       COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
-      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RH(5,8),RELBX(8),RBH(5,8),
      1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
       DATA NBLANK/1H /,NSTAR/1H*/
 C     ЭЙЛЕРОВЫ УГЛЫ ИЗ КВАТЕРНИОНА (ТАНГЕНСЫ ПОЛУ-УГЛОВ)
