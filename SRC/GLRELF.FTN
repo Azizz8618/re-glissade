@@ -1,0 +1,207 @@
+C==============================================================
+C     ГЛИССАДА-6. РЕЛЬЕФ МЕСТНОСТИ, ПРОСВЕТ И СТОЛКНОВЕНИЕ.
+C     ФОРТРАН ИПМ/ФОРЭКС, ФИКСИРОВАННАЯ ФОРМА, КОЛОНКИ 1-72.
+C     ВСЕ ЧИСЛА И ПОРОГИ - В БЛОКЕ /RELF/ (BLOCK DATA NIZHE).
+C     IREL=0 - РЕЛЬЕФ ОТКЛЮЧЕН: ЗЕМЛЯ НУЛЕВАЯ, ПРОСВЕТ=X(13),
+C              КАСАНИЕ ПО X(13)<=HCR. РЕГРЕССИЯ НЕ МЕНЯЕТСЯ.
+C     IREL=1 - КУСОЧНО-ЛИНЕЙНЫЙ ПРОДОЛЬНЫЙ ПРОФИЛЬ ПО X(11)
+C              ПЛЮС АДДИТИВНАЯ ПОПРАВКА ПО X(12).
+C     ПРОЦЕДУРЫ: ZEM - ВЫСОТА ЗЕМЛИ, PRS - ПРОСВЕТ,
+C                STK - ПРОВЕРКА ОТРЕЗКА, MNPRS - МИНИМУМ ПРОСВЕТА,
+C                STKPRT - ДИАГНОСТИКА КАСАНИЯ, MNPRT - ПЕЧАТЬ МИНИМУМА.
+C==============================================================
+      BLOCK DATA RELBLK
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+     1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
+C     IREL - ВКЛЮЧЕНИЕ РЕЛЬЕФА: 0 ОТКЛЮЧЕН, 1 ВКЛЮЧЕН.
+C     NRL,NRB - ЧИСЛО УЗЛОВ ПРОДОЛЬНОГО И ПОПЕРЕЧНОГО ПРОФИЛЕЙ.
+C     RELX,RELH - КООРДИНАТА И ВЫСОТА УЗЛОВ ПРОДОЛЬНОГО ПРОФИЛЯ.
+C     RELBX,RELBH - КООРДИНАТА И ПОПРАВКА УЗЛОВ ПОПЕРЕЧНОГО ПРОФИЛЯ.
+C     RDT - ПРЕДЕЛЬНЫЙ ШАГ ПО ПУТИ ПРИ ПРОВЕРКЕ ОТРЕЗКА, М.
+C     RTHR - ЧИСЛОВАЯ МАРЖА ПРИ СРАВНЕНИИ ПРОСВЕТА С HCR, М.
+C     REPS - ЧИСЛОВАЯ МАРЖА ДЛЯ ГРАНИЦ УЗЛОВ.
+C     RWARN,RCRIT - УЧЕБНЫЕ ПОРОГИ ПРЕДУПРЕЖДЕНИЯ, М.
+C     RMINP,RMN11,RMN12,RMNT,IMNFL - НАКОПЛЕННЫЙ МИНИМУМ ПРОСВЕТА.
+      DATA IREL/0/,NRL/8/,NRB/8/,IMNFL/0/
+      DATA RELX/-15000.,-6000.,-3000.,-2000.,-1200.,-700.,-250.,0./
+      DATA RELH/0.,0.,18.,65.,95.,35.,4.,0./
+      DATA RELBX/-3000.,-2350.,-1700.,-800.,0.,800.,1700.,3000./
+      DATA RELBH/0.,140.,20.,0.,0.,0.,15.,25./
+      DATA RDT/7./,RTHR/1.E-6/,REPS/1.E-9/
+      DATA RWARN/30./,RCRIT/10./
+      DATA RMINP/0./,RMN11/0./,RMN12/0./,RMNT/0./
+      END
+C--------------------------------------------------------------
+C     ВЫСОТА ЗЕМЛИ В ТОЧКЕ X(11),X(12). ПРИ IREL=0 РАВНА НУЛЮ.
+      SUBROUTINE ZEM(X11,X12,ZG)
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+     1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
+      ZG=0.
+      IF(IREL.EQ.0) RETURN
+C     ПРОДОЛЬНЫЙ ПРОФИЛЬ.
+      ZH=RELH(1)
+      IF(X11.LE.RELX(1)) GO TO 30
+      IF(X11.GE.RELX(NRL)) GO TO 20
+      NL=NRL-1
+      DO 10 I=1,NL
+        IF(X11.GT.RELX(I+1)) GO TO 10
+        F=(X11-RELX(I))/(RELX(I+1)-RELX(I))
+        ZH=RELH(I)+F*(RELH(I+1)-RELH(I))
+        GO TO 30
+   10 CONTINUE
+   20 ZH=RELH(NRL)
+   30 CONTINUE
+C     АДДИТИВНАЯ ПОПРАВКА ПО ПОПЕРЕЧНОЙ КООРДИНАТЕ.
+      ZB=RELBH(1)
+      IF(X12.LE.RELBX(1)) GO TO 60
+      IF(X12.GE.RELBX(NRB)) GO TO 50
+      NB=NRB-1
+      DO 40 I=1,NB
+        IF(X12.GT.RELBX(I+1)) GO TO 40
+        F=(X12-RELBX(I))/(RELBX(I+1)-RELBX(I))
+        ZB=RELBH(I)+F*(RELBH(I+1)-RELBH(I))
+        GO TO 60
+   40 CONTINUE
+   50 ZB=RELBH(NRB)
+   60 ZG=ZH+ZB
+      END
+C--------------------------------------------------------------
+C     ПРОСВЕТ: ВЫСОТА X(13) МИНУС ВЫСОТА ЗЕМЛИ.
+C     ПРИ IREL=0 ПРОСВЕТ РАВЕН X(13).
+      SUBROUTINE PRS(X11,X12,ALT,PR)
+      CALL ZEM(X11,X12,ZG)
+      PR=ALT-ZG
+      END
+C--------------------------------------------------------------
+C     МИНИМУМ ПРОСВЕТА ЗА ПРОГОН. ПРИ IREL=0 НИЧЕГО НЕ НАКАПЛИВАЕТ.
+      SUBROUTINE MNPRS(X11,X12,ALT,T)
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+     1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
+      IF(IREL.EQ.0) RETURN
+      CALL PRS(X11,X12,ALT,P)
+      IF(IMNFL.EQ.0) GO TO 10
+      IF(P.GE.RMINP) RETURN
+   10 RMINP=P
+      RMN11=X11
+      RMN12=X12
+      RMNT=T
+      IMNFL=1
+      END
+C--------------------------------------------------------------
+C     ПРОВЕРКА СТОЛКНОВЕНИЯ С ЗЕМЛЁЙ НА ОТРЕЗКЕ ОТ ПРОШЛОЙ ТОЧКИ
+C     К ТЕКУЩЕЙ. КООРДИНАТЫ НАЧАЛА: X0,Y0,H0, КОНЦА: X1,Y1,H1.
+C     IST=0 - КАСАНИЯ НЕТ, IST=1 - КАСАНИЕ ЕСТЬ.
+C     XK,YK,HK - КООРДИНАТЫ ПЕРВОГО КАСАНИЯ НА ОТРЕЗКЕ.
+C     ОТРЕЗОК ДРОБИТСЯ НА ЧАСТИ НЕ ДЛИННЕЕ RDT ПО ПУТИ, В НАБОР
+C     ВКЛЮЧАЮТСЯ УЗЛЫ ОБОИХ ПРОФИЛЕЙ ВНУТРИ ОТРЕЗКА, ПЕРВОЕ
+C     КАСАНИЕ УТОЧНЯЕТСЯ ДЕЛЕНИЕМ ИНТЕРВАЛА ПОПОЛАМ.
+      SUBROUTINE STK(X0,Y0,H0,X1,Y1,H1,IST,XK,YK,HK)
+      DIMENSION FRAC(48)
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+     1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
+      COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
+     1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
+      IST=0
+      IF(IREL.EQ.0) RETURN
+      DX=X1-X0
+      DY=Y1-Y0
+      DH=H1-H0
+      DL=SQRT(DX*DX+DY*DY+DH*DH)
+      N=IFIX(DL/RDT)+1
+      IF(N.GT.24) N=24
+      IF(N.LT.1) N=1
+      NF=0
+      DO 10 I=0,N
+        NF=NF+1
+        FRAC(NF)=FLOAT(I)/FLOAT(N)
+   10 CONTINUE
+C     УЗЛЫ ПРОДОЛЬНОГО ПРОФИЛЯ ВНУТРИ ОТРЕЗКА.
+      IF(ABS(DX).LT.REPS) GO TO 30
+      DO 20 I=1,NRL
+        F=(RELX(I)-X0)/DX
+        IF(F.LE.REPS) GO TO 20
+        IF(F.GE.1.-REPS) GO TO 20
+        NF=NF+1
+        FRAC(NF)=F
+   20 CONTINUE
+   30 CONTINUE
+C     УЗЛЫ ПОПЕРЕЧНОГО ПРОФИЛЯ ВНУТРИ ОТРЕЗКА.
+      IF(ABS(DY).LT.REPS) GO TO 50
+      DO 40 I=1,NRB
+        F=(RELBX(I)-Y0)/DY
+        IF(F.LE.REPS) GO TO 40
+        IF(F.GE.1.-REPS) GO TO 40
+        NF=NF+1
+        FRAC(NF)=F
+   40 CONTINUE
+   50 CONTINUE
+C     СОРТИРОВКА ДОЛЕЙ ПО ВОЗРАСТАНИЮ.
+      NM=NF-1
+      DO 70 I=1,NM
+        M=I+1
+        DO 60 J=M,NF
+          IF(FRAC(I).LE.FRAC(J)) GO TO 60
+          F=FRAC(I)
+          FRAC(I)=FRAC(J)
+          FRAC(J)=F
+   60   CONTINUE
+   70 CONTINUE
+C     ПРОХОД ПО ОТРЕЗКУ В ПОРЯДКЕ ДВИЖЕНИЯ.
+      FP=FRAC(1)
+      FC=FP
+      CALL PRS(X0+FP*DX,Y0+FP*DY,H0+FP*DH,P)
+      IF(P.LE.HCR+RTHR) GO TO 120
+      DO 100 I=2,NF
+        FC=FRAC(I)
+        CALL PRS(X0+FC*DX,Y0+FC*DY,H0+FC*DH,P)
+        IF(P.GT.HCR+RTHR) GO TO 90
+C     УТОЧНЕНИЕ ПЕРВОГО КАСАНИЯ ДЕЛЕНИЕМ ОТРЕЗКА ПОПОЛАМ.
+        LO=FP
+        HI=FC
+        DO 80 K=1,30
+          FM=0.5*(LO+HI)
+          CALL PRS(X0+FM*DX,Y0+FM*DY,H0+FM*DH,PM)
+          IF(PM.LE.HCR+RTHR) GO TO 75
+          LO=FM
+          GO TO 80
+   75     HI=FM
+   80   CONTINUE
+        FC=HI
+        GO TO 120
+   90   FP=FC
+  100 CONTINUE
+      RETURN
+  120 IST=1
+      XK=X0+FC*DX
+      YK=Y0+FC*DY
+      HK=H0+FC*DH
+      END
+C--------------------------------------------------------------
+C     ДИАГНОСТИКА КАСАНИЯ С ЗЕМЛЁЙ.
+      SUBROUTINE STKPRT(XK,YK,HK)
+      WRITE(6,916) XK,YK,HK
+  916 FORMAT(1H0,18HSTOLKNOVENIE ZEMLI,5H X11=,F7.0,5H X12=,
+     1F7.1,5H VYS=,F7.1,2H M)
+      END
+C--------------------------------------------------------------
+C     ПЕЧАТЬ МИНИМАЛЬНОГО ПРОСВЕТА В КОНЦЕ ПРОГОНА.
+      SUBROUTINE MNPRT
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+     1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
+      IF(IREL.EQ.0) RETURN
+      IF(IMNFL.EQ.0) RETURN
+      WRITE(6,915) RMINP,RMN11,RMN12,RMNT
+  915 FORMAT(1H0,12HMIN PROSVET=,F7.1,8H M, X11=,F7.0,6H, X12=,
+     1F7.1,4H, T=,F6.1,4H SEK)
+      END
+C--------------------------------------------------------------
+C     АКСЕССОР ДЛЯ ПАСКАЛЬ-ОБОЛОЧКИ: ПРИЗНАК, ЗЕМЛЯ, ПРОСВЕТ,
+C     МИНИМАЛЬНЫЙ ПРОСВЕТ ЗА ПРОГОН.
+      SUBROUTINE RELGET(X11,X12,ALT,IR,ZG,PR,RMIN)
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+     1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
+      IR=IREL
+      CALL ZEM(X11,X12,ZG)
+      PR=ALT-ZG
+      RMIN=RMINP
+      END

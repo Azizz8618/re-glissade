@@ -6,6 +6,8 @@ C==============================================================
       DIMENSION X(13),U(4),LINE(41)
       COMMON /GLOB/ T,DTSHAG,KTIP,MODE,ICTRL,NFR,IFLIB,TMAX
       COMMON /VYVOD/ ALFA,BETA,QBAR,VA,RHO,THR,CLV,CDV
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+     1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
       DATA NBLANK/1H /,NSTAR/1H*/
 C     ЭЙЛЕРОВЫ УГЛЫ ИЗ КВАТЕРНИОНА (ТАНГЕНСЫ ПОЛУ-УГЛОВ)
       Q0=X(4)
@@ -44,6 +46,13 @@ C     ЭЙЛЕРОВЫ УГЛЫ ИЗ КВАТЕРНИОНА (ТАНГЕНСЫ П
   704 FORMAT(1H ,17X,41A1)
       WRITE(6,705) X(12),EGLI
   705 FORMAT(1H ,9HKURS LUCH,4H  Y=,F7.1,2H M,7H  GLIS=,F7.1,2H M,/)
+C     ПРИ ВЫКЛЮЧЕННОМ РЕЛЬЕФЕ КАДР НЕ ИЗМЕНЯЕТСЯ НИ ОДНИМ БАЙТОМ.
+      IF(IREL.EQ.0) RETURN
+      CALL ZEM(X(11),X(12),ZG)
+      CALL PRS(X(11),X(12),X(13),PR)
+      WRITE(6,706) ZG,PR,RMINP
+  706 FORMAT(1H ,8H ZEMLYA=,F7.1,9H PROSVET=,F7.1,13H MIN PROSVET=,
+     1F7.1)
       RETURN
       END
 C     КОРОТКАЯ СТРОКА НА ДИСПЛЕЙ (КАНАЛ 12)
@@ -98,5 +107,6 @@ C     ОЦЕНКА ПОСАДКИ ПО ВЕРТИКАЛЬНОЙ СКОРОСТИ
   860 FORMAT(1H0,25HAVARIA: KASANIE DO POROGA)
       WRITE(6,870) T
   870 FORMAT(1H0,2HT=,F7.1,7H SEKUND)
+      CALL MNPRT
       RETURN
       END

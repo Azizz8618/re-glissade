@@ -23,6 +23,8 @@ var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     MANUAL:boolean; DE,DA,DR,DTZ:real;
     RECON:boolean; NFRMX,NEVMX,NSTEP,IEVK:integer;
     RX:VEC13; RU:VEC4; RT:real;
+    XP,YP,HP,XK,YK,HK,ZG,PR,RMIN:real;
+    IREL,IST:integer; RELHIT:boolean;
     SCVERT,SCTOCH,SCY,SCSKO,SCUPR,SCPLAV,SCTOT:real; SCZACH:integer;
     SCW1,SCW2,SCW3,SCW4,SCW5,SCW6,SCW7:real;
     SCQ1,SCQ2,SCQ3,SCQ4,SCQ5,SCQ6:real;
@@ -78,6 +80,12 @@ procedure GLSC(var SU:real; var NE:integer); fortran;
 procedure GLVOD(var VA,ALF:real); fortran;
 procedure GLANG(var X:VEC13; var TH,GA,PS,DTM,EG:real;
            var IP:integer); fortran;
+(* рельеф: все расчёты - в Фортране, Паскаль только печатает *)
+procedure RELGET(var X11,X12,ALT:real; var IR:integer;
+           var ZG,PR,RMIN:real); fortran;
+procedure MNPRS(var X11,X12,ALT,T:real); fortran;
+procedure STK(var X0,Y0,H0,X1,Y1,H1:real; var IST:integer;
+           var XK,YK,HK:real); fortran;
 (************************************************************)
 procedure GTINT(var N:integer; var OK:boolean);
 var P:integer; C:char;
@@ -184,6 +192,7 @@ end;
 procedure DOSTP;
 var I,IFAIL:integer;
 begin
+  XP:=X[11]; YP:=X[12]; HP:=X[13];
   if ICTRL<>3 then
   begin
     T:=T+DTSH;
@@ -240,6 +249,12 @@ begin
   X[4]:=X[4]/QN; X[5]:=X[5]/QN; X[6]:=X[6]/QN; X[7]:=X[7]/QN;
   EGLI:=X[13]+0.05241*X[11];
   SUME:=SUME+EGLI*EGLI; NEGL:=NEGL+1;
+  MNPRS(X[11],X[12],X[13],T);
+  STK(XP,YP,HP,X[11],X[12],X[13],IST,XK,YK,HK);
+  if IST=1 then
+  begin
+    X[11]:=XK; X[12]:=YK; X[13]:=HK; RELHIT:=true
+  end;
   NSTP:=NSTP+1;
   if RECON and (NSTP mod NSTEP=0) then RECPUT(X,U,T)
 end;
@@ -282,7 +297,10 @@ begin
   writeln(' GLISS 3 GR |----*----| EGLI=',EGLI:7:1,' M');
   writeln(' KURS LUCH |----*----| Y=',X[12]:7:1,' M');
   writeln(' SKOR=',VA:6:1,' VERT=',X[2]:6:2,
-          ' ATAKA=',ALF:5:1,' TYAG=',100*U[4]:3:0)
+          ' ATAKA=',ALF:5:1,' TYAG=',100*U[4]:3:0);
+  RELGET(X[11],X[12],X[13],IREL,ZG,PR,RMIN);
+  if IREL=1 then
+    writeln(' ZEMLYA=',ZG:7:1,' PROSVET=',PR:7:1,' MIN=',RMIN:7:1)
 end;
 (************************************************************)
 procedure SCRROW(NM:alfa; V,Q,W:real);
@@ -362,7 +380,7 @@ begin
   EXDT0[5]:=0.60; EXTMAX[5]:=2400.0;
   PARAMS;
   INIT;
-  PAUS:=true; RUN:=false;
+  PAUS:=true; RUN:=false; RELHIT:=false;
   repeat
     if PAUS then
     begin
@@ -431,6 +449,20 @@ begin
     if RUN then
     begin
       DOSTP;
+      if RELHIT then
+      begin
+        PRFRM; writeln('STOLKNOVENIE S ZEMLEJ X11=',X[11]:7:0,
+                ' VYS=',X[13]:7:1);
+        GLSC(SUME,NEGL); SCCALC(X); JUDG(X);
+        AVY:=abs(X[2]); OCE:=4;
+        if AVY<=4.0 then OCE:=3;
+        if AVY<=2.5 then OCE:=2;
+        if AVY<=1.5 then OCE:=1;
+        writeln('OCENKA= ',OCE:1);
+        RUN:=false; PAUS:=true; RELHIT:=false
+      end
+      else
+      begin
       if (NSTP mod NPRN)=0 then PRFRM;
       if X[13]<=VHCR then
       begin
@@ -455,6 +487,7 @@ begin
             RUN:=false; PAUS:=true end;
       if (not PAUS) and (NSTP mod NPRN=0) and (ICTRL=1)
       then CMDLOOP(CMD)
+      end
     end
   until false
 end.

@@ -15,6 +15,8 @@ C==============================================================
       COMMON /BURJA/ WGX,WGY,WGZ,SIGW,TAU
       COMMON /SBSEED/ RSEED
       COMMON /SCHET/ SUME,NEGL
+      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RELH(8),RELBX(8),RELBH(8),
+     1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
 C     КАРТА 1: ТИП,РЕЖИМ,КОНТРОЛЬ,ПЕЧАТЬ АЦПУ,БИБЛ.СБ  (5I5)
       ERMAX=0.
       READ(5,900) KTIP,MODE,ICTRL,NFR,IFLIB
@@ -49,6 +51,7 @@ C     НАЧАЛЬНЫЕ УСЛОВИЯ: ВХОД В ГЛИССАДУ, 15 КМ �
       WGZ=0.
       SUME=0.
       NEGL=0
+      IMNFL=0
       IF(MODE.EQ.2) CALL PRVIN
       WRITE(6,902)
   902 FORMAT(1H1,25X,15HIGRA GLISSADA-6,//,18X,
@@ -66,6 +69,10 @@ C     РЕЗЕРВНЫЙ КОНТРОЛЬ ТОЧНОСТИ (ПОЛЕ 3 КАРТ�
       CALL KUTMER(X,U,DTSHAG,ERR)
       IF(ERR.GT.ERMAX) ERMAX=ERR
   155 CONTINUE
+C     ПРОШЛАЯ ПОЗИЦИЯ ДЛЯ ПРОВЕРКИ ПРОЙДЕННОГО ОТРЕЗКА.
+      XP=X(11)
+      YP=X(12)
+      HP=X(13)
       CALL PROIZV(X,U,K1)
       DO 100 I=1,13
   100 X1(I)=X(I)+0.5*DTSHAG*K1(I)
@@ -88,6 +95,17 @@ C     НАКОПЛЕНИЕ СКО ОТКЛОНЕНИЯ ОТ ГЛИССАДЫ
       EGLI=X(13)+0.05241*X(11)
       SUME=SUME+EGLI*EGLI
       NEGL=NEGL+1
+C     МИНИМУМ ПРОСВЕТА ЗА ПРОГОН И ПРОВЕРКА ОТРЕЗКА.
+      CALL MNPRS(X(11),X(12),X(13),T)
+      IF(IREL.EQ.0) GO TO 170
+      CALL STK(XP,YP,HP,X(11),X(12),X(13),IST,XK,YK,HK)
+      IF(IST.EQ.0) GO TO 170
+      X(11)=XK
+      X(12)=YK
+      X(13)=HK
+      CALL STKPRT(XK,YK,HK)
+      GO TO 2000
+  170 CONTINUE
 C     КАСАНИЕ ПОЛОСЫ (ВЫСОТА ШАССИ)
       IF(X(13).LE.HCR) GO TO 2000
 C     ЗАЩИТА ОТ РАЗВАЛА СЧЕТА
@@ -97,6 +115,7 @@ C     ЗАЩИТА ОТ РАЗВАЛА СЧЕТА
  1100 CONTINUE
       WRITE(6,903) TMAX
   903 FORMAT(1H1,10X,27HLIMIT VREMENI ISCHERPAN: T=,F7.0)
+      CALL MNPRT
       STOP
  2000 CALL FRAME(X,U)
       CALL JUDG(X)
