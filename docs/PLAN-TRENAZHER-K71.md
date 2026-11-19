@@ -145,7 +145,7 @@ Pascal GLDIAL (ведущая, PERSO зона 2700)
 | 1 | Барьер регрессии | зафиксировать md5 диска, catalog зоны 2700, `verify` | ✅ 10/10, `*call gldial` штатно, `trenazher-baseline.md` |
 | 2 | Словарь команд | описать команды пилота/инструктора, литеры ≤6 | ✅ таблица в `docs/DIALOG-FIELD.md` §5 |
 | 3 | Команды инструктора в диалоге | расширить `CMDLOOP`: SELECT/FREEZE/DEBRIEF | прогон с новыми командами, старые сценарии 10/10 |
-| 4 | Библиотека упражнений | 5 упражнений `TOOLS/exercises/*.json`, `exercises.py`, `SEL` в Pascal | ✅ 4/5 целей, `SEL` переключает тип; T2 — GAP |
+| 4 ✅ | Библиотека упражнений | 5 упражнений, `exercises.py`, `SEL` в Pascal | ✅ 5/5 целей; T2 — ручной пилот по шагам `STE` |
 | 5 | Ручное управление | команды `EV/AI/RU/TH±` и `AUTO` в `GLDIAL` → U(1..4) | ✅ 14/14 ответов, сценарии 10/10 |
 | 6 | Модель отказов | `GLFAULT.FTN`, 5 кодов, `INJ` в Pascal | ✅ `FAULT=1`, OCENKA=2, сценарии 10/10 |
 | 7 | Recorder/replay | `GLRECF.FTN`, блок `/RECPAR/`, команды `REC/RPL/RST`, `TOOLS/replay.py` | ✅ md5 телеметрии совпал при повторе: 47 кадров, 1 событие |
@@ -208,7 +208,7 @@ Pascal GLDIAL (ведущая, PERSO зона 2700)
    границах шага через живой мост DKS.
 4. ✅ **Регрессия ядра:** `python3 -m pytest TOOLS/tests`,
    `TOOLS/calib/scenarios.py verify` (10/10),
-   `TOOLS/exercises.py verify` (4/5), `TOOLS/replay.py verify`
+   `TOOLS/exercises.py verify` (5/5), `TOOLS/replay.py verify`
    (побайтовое совпадение).
 5. ✅ **Документация и публикация:** `README.md` (версия 0.9), этот план,
    коммиты в `origin main` и `sourcecraft main`.

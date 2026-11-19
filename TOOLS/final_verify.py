@@ -51,9 +51,8 @@ def check_scenarios():
 
 def check_exercises():
     code, out = run([sys.executable, 'TOOLS/exercises.py', 'verify'])
-    # 4/5 — зафиксированное состояние: упражнение T2 требует доработки
-    # автопилота при SIGW>0 (GAP плана).
-    ok = code == 0 and 'OK=4, не достигнуто=1' in out
+    # T2 выполняется ручным пилотом (поле pilot="manual" в T2.json).
+    ok = code == 0 and 'OK=5, не достигнуто=0' in out
     return ok, next((ln for ln in out.splitlines() if 'OK=' in ln), out[-200:])
 
 
@@ -115,7 +114,7 @@ def main() -> int:
     checks = [
         ('Модульные тесты', check_pytest),
         ('Исторические сценарии (10/10)', check_scenarios),
-        ('Упражнения (4/5)', check_exercises),
+        ('Упражнения (5/5)', check_exercises),
         ('Побайтовый повтор', check_replay),
         ('Задачи ПВС на СМ-2', check_sm2_tasks),
     ]
@@ -151,9 +150,9 @@ def main() -> int:
     lines.append('')
     lines.append('Успешно: %d из %d.' % (good, len(results)))
     lines.append('')
-    lines.append('ГAP: упражнение T2 не достигает целевой посадки при SIGW>0; '
+    lines.append('GAP: автопилот МиГ-15 неустойчив при SIGW>0 (T2 решён ручным пилотом); '
                  'кодировка СМ-2 объявлена в `sm2_params.h`, не сверена с железом; '
-                 'прямая связка `SM2KD` с сокетом отсутствует.'.replace('ГAP', 'GAP'))
+                 'прямая связка `SM2KD` с сокетом отсутствует.')
     report = Path(args.report)
     report.parent.mkdir(parents=True, exist_ok=True)
     report.write_text('\n'.join(lines) + '\n', encoding='utf-8')
