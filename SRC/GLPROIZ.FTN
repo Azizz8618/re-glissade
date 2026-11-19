@@ -12,6 +12,7 @@ C==============================================================
      1TETYPE(5),TTHMAX(5),TPMAX(5),TVTHR(5),THCR(5),TJX(5),TJY(5),
      1TJZ(5),TALFS(5),TCLS(5),TTHI0(5),TTHI1(5),TTHV(5),TPROPE(5),
      1TVAMIN
+      COMMON /CFALF/ ALFSEF
       COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
      1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
       COMMON /INERC/ JX,JY,JZ
@@ -52,7 +53,8 @@ C     АТМОСФЕРА: ПЛОТНОСТЬ ПО ВЫСОТЕ (СБ ИЛИ МС
       QBAR=0.5*RHO*VA*VA
 C     ПОДЪЕМНАЯ СИЛА: ЛИНЕЙНЫЙ УЧАСТОК, ЗАТЕМ СРЫВ
       CL=CL0+CLA*ALFA
-      ALFS=TALFS(KTIP)
+C     ПОРОГ СРЫВА ИЗ /CFALF/ - МЕНЯЕТСЯ ВМЕСТЕ С КОНФИГУРАЦИЕЙ.
+      ALFS=ALFSEF
       IF(ABS(ALFA).GT.ALFS) CL=SIGN(CLMX*(1.-TCLS(KTIP)*
      1(ABS(ALFA)-ALFS)),CL)
       IF(ABS(CL).GT.CLMX) CL=SIGN(CLMX,CL)
