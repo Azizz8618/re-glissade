@@ -1,38 +1,96 @@
 C==============================================================
 C     ГЛИССАДА-6. МОДЕЛЬ ЗАПАСА ТОПЛИВА И ЕГО РАСХОДА.
 C     ПАРАМЕТРЫ ПО ТИПАМ ЛЕЖАТ В /TTXDAT/ (SRC/GLTTX.FTN):
-C     TFU0 - ЗАПАС, КГ; TFR - РАСХОД ПРИ ТЯГЕ 1, КГ/С;
-C     TFW - ПОРОГ ПРЕДУПРЕЖДЕНИЯ, ДОЛЯ ОТ ЗАПАСА.
-C     INITD ПЕРЕНОСИТ ИХ В СКАЛЯРЫ FUEL0,FRATE,FWARN БЛОКА /FUELP/.
+C     TFAP - ОСТАТОК НА ВХОДЕ В ГЛИССАДУ, КГ;
+C     TFLW - РАСХОД ПРИ ТЯГЕ 1, КГ/С;
+C     TFRS - ПОСАДОЧНЫЙ РЕЗЕРВ, КГ;
+C     TFWL - ПОРОГ ПРЕДУПРЕЖДЕНИЯ, ДОЛЯ;
+C     TFCAP - ЁМКОСТЬ БАКА, КГ.
+C     INITD ПЕРЕНОСИТ ИХ В /FUELP/ КАК FUEL0,FRATE,FWARN,FCAPP,FRESB.
+C     БЛОК /FUELMS/ - ЗАДАНИЕ ИНСТРУКТОРА: FEXTR - ДОБАВКА К
+C     ОСТАТКУ, КГ, И FRESM - МНОЖИТЕЛЬ РЕЗЕРВА. ПО УМОЛЧАНИЮ
+C     НУЛЬ И ЕДИНИЦА, ТО ЕСТЬ ПРЕЖНЯЯ РЕГРЕССИЯ НЕ МЕНЯЕТСЯ.
 C     FUEL - ТЕКУЩИЙ ЗАПАС, КГ; FMIN - НИЖНИЙ ПРЕДЕЛ ЗАПАСА, КГ.
-C     ЗАПАС И ПРЕДЕЛ - СОСТОЯНИЕ ПРОГОНА, ТОЖЕ В /FUELP/.
 C==============================================================
-      BLOCK DATA GLFUEL
-      COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN
-      DATA FUEL/1200./
-      DATA FMIN/0./
+       BLOCK DATA GLFUEL
+       COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN,FCAPP,FRESB
+       COMMON /FUELMS/ FEXTR,FRESM
+       COMMON /FUELTT/ TFAP(5),TFLW(5),TFRS(5),TFWL(5),TFCAP(5)
+       DATA FUEL/1200./
+       DATA FMIN/0./
+       DATA FEXTR/0./
+       DATA FRESM/1./
+       DATA TFAP /250., 900., 6500., 800., 120./
+       DATA TFLW /0.7, 1.6, 4.0, 0.35, 0.07/
+       DATA TFRS /120., 550., 2000., 500., 65./
+       DATA TFWL /0.5, 0.6, 0.3, 0.2, 0.2/
+       DATA TFCAP /1200., 6600., 26500., 3950., 880./
+       END
+C     СБРОС ЗАПАСА К НАЧАЛУ ЗАДАНИЯ В НАЧАЛЕ ПРОГОНА.
+C     НАЧАЛЬНЫЙ ЗАПАС РАВЕН TFAP(KTIP) ПЛЮС ДОБАВКА ИНСТРУКТОРА.
+C     РЕЖИМ MODE=0 - СБРОС ЗАПАСА, MODE=1 - СПИСАНИЕ ЗА ШАГ.
+       SUBROUTINE FUELRS(MODE,DT,U4)
+       COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN,FCAPP,FRESB
+       COMMON /FUELMS/ FEXTR,FRESM
+       IF(MODE.EQ.1) GO TO 10
+       FUEL=FUEL0+FEXTR
+       RETURN
+   10 FUEL=FUEL-FRATE*U4*DT
+       IF(FUEL-FMIN) 20,20,30
+   20 FUEL=FMIN
+       U4=0.
+   30 CONTINUE
+       END
+C     УСТАНОВКА ЗАДАНИЯ ИНСТРУКТОРА ИЗ ДИАЛОГА. FEX - ДОБАВКА
+C     К ОСТАТКУ В КИЛОГРАММАХ, FRM - МНОЖИТЕЛЬ ПОСАДОЧНОГО
+C     РЕЗЕРВА. ЗАПАС СРАЗУ ПРИВОДИТСЯ К НОВОМУ НАЧАЛЬНОМУ.
+       SUBROUTINE FUELSE(FEX,FRM)
+       COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN,FCAPP,FRESB
+       COMMON /FUELMS/ FEXTR,FRESM
+       FEXTR=FEX
+       FRESM=FRM
+       FUEL=FUEL0+FEXTR
+       END
+C     АКСЕССОР ДЛЯ ПАСКАЛЯ. ВЫХОДЫ: FCUR - ТЕКУЩИЙ ЗАПАС,
+C     FSTA - НАЧАЛЬНЫЙ ЗАПАС, FCAP - ЁМКОСТЬ БАКА,
+C     FRES - ПОСАДОЧНЫЙ РЕЗЕРВ С МНОЖИТЕЛЕМ ЗАДАНИЯ,
+C     FWRN - ПОРОГ ПРЕДУПРЕЖДЕНИЯ В КИЛОГРАММАХ.
+       SUBROUTINE FUELGT(FCUR,FSTA,FCAP,FRES,FWRN)
+       COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN,FCAPP,FRESB
+       COMMON /FUELMS/ FEXTR,FRESM
+       FCUR=FUEL
+       FSTA=FUEL0+FEXTR
+       FCAP=FCAPP
+       FRES=FRESB*FRESM
+       FWRN=FRESB*FRESM
+       END
+C--------------------------------------------------------------
+C     ВЫДАЧА ТОПЛИВНЫХ ТТХ ДЛЯ ЗАДАННОГО ТИПА.
+      SUBROUTINE FUELTV(K,FAP,FLW,FRS,FWL,FCAP)
+      COMMON /FUELTT/ TFAP(5),TFLW(5),TFRS(5),TFWL(5),TFCAP(5)
+      FAP=TFAP(K)
+      FLW=TFLW(K)
+      FRS=TFRS(K)
+      FWL=TFWL(K)
+      FCAP=TFCAP(K)
+      END
+C     ВЫДАЧА ТОПЛИВНЫХ ТТХ ДЛЯ ЗАДАННОГО ТИПА.
+      SUBROUTINE FUELTV(K,FAP,FLW,FRS,FWL,FCAP)
+      COMMON /FUELTT/ TFAP(5),TFLW(5),TFRS(5),TFWL(5),TFCAP(5)
+      FAP=TFAP(K)
+      FLW=TFLW(K)
+      FRS=TFRS(K)
+      FWL=TFWL(K)
+      FCAP=TFCAP(K)
       END
 C     СПИСАНИЕ ТОПЛИВА ЗА ШАГ. U4 - ТЯГА U(4) В ДИАПАЗОНЕ 0..1,
 C     DT - ШАГ ИНТЕГРИРОВАНИЯ В СЕКУНДАХ. ПРИ ИСЧЕРПАНИИ ЗАПАСА
 C     ТЯГА ОБНУЛЯЕТСЯ, ТО ЕСТЬ ДВИГАТЕЛЬ ГЛОХНЕТ.
-      SUBROUTINE FUELR(U4,DT)
-      COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN
-      FUEL=FUEL-FRATE*U4*DT
-      IF(FUEL-FMIN) 10,10,20
-   10 FUEL=FMIN
-      U4=0.
-   20 CONTINUE
-      END
-C     СБРОС ЗАПАСА К НАЧАЛЬНОМУ ЗНАЧЕНИЮ В НАЧАЛЕ ПРОГОНА.
-      SUBROUTINE FUELRS
-      COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN
-      FUEL=FUEL0
-      END
-C     АКСЕССОР ДЛЯ ПАСКАЛЯ. FCUR,FSTA,FWRN - ВЫХОДНЫЕ ПАРАМЕТРЫ:
-C     ТЕКУЩИЙ ЗАПАС, НАЧАЛЬНЫЙ ЗАПАС И ПОРОГ ПРЕДУПРЕЖДЕНИЯ.
-      SUBROUTINE FUELGT(FCUR,FSTA,FWRN)
-      COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN
-      FCUR=FUEL
-      FSTA=FUEL0
-      FWRN=FWARN
-      END
+       SUBROUTINE FULRK(U4,DT)
+       COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN,FCAPP,FRESB
+       FUEL=FUEL-FRATE*U4*DT
+       IF(FUEL-FMIN) 10,10,20
+    10 FUEL=FMIN
+       U4=0.
+    20 CONTINUE
+       END

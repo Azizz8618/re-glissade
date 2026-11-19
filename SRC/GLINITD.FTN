@@ -13,7 +13,7 @@ C==============================================================
       COMMON /SOST/ GM,S,BB,CC,CL0,CLA,CLMX,CD0,AK,CMA,CM0,CMDE,
      1CMQ,CLB,CLDA,CLP,CNB,CNDR,CNR,CYB,ETYPE,THMAX,PMAX,VTHR,HCR
       COMMON /INERC/ JX,JY,JZ
-      COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN
+      COMMON /FUELP/ FUEL0,FRATE,FWARN,FUEL,FMIN,FCAPP,FRESB
       GM=TGM(KTIP)
       S=TS(KTIP)
       BB=TBB(KTIP)
@@ -42,9 +42,12 @@ C==============================================================
       JX=TJX(KTIP)
       JY=TJY(KTIP)
       JZ=TJZ(KTIP)
-      FUEL0=TFU0(KTIP)
-      FRATE=TFR(KTIP)
-      FWARN=TFW(KTIP)
+      CALL FUELTV(KTIP,FAPX,FLWX,FRSX,FWLX,FCAPX)
+      FUEL0=FAPX
+      FRATE=FLWX
+      FWARN=FWLX
+      FCAPP=FCAPX
+      FRESB=FRSX
       GO TO (10,20,30,40,50),KTIP
    10 WRITE(6,910)
   910 FORMAT(1H0,13HTIP SAMOLETA:,7H MIG-15)

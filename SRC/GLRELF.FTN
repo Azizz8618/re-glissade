@@ -201,25 +201,6 @@ C     УТОЧНЕНИЕ ПЕРВОГО КАСАНИЯ ДЕЛЕНИЕМ ОТРЕ
       END
 C--------------------------------------------------------------
 C     ДИАГНОСТИКА КАСАНИЯ С ЗЕМЛЁЙ.
-      SUBROUTINE STKPRT(XK,YK,HK)
-      WRITE(6,916) XK,YK,HK
-  916 FORMAT(1H0,18HSTOLKNOVENIE ZEMLI,5H X11=,F7.0,5H X12=,
-     1F7.1,5H VYS=,F7.1,2H M)
-      END
-C--------------------------------------------------------------
-C     ПЕЧАТЬ МИНИМАЛЬНОГО ПРОСВЕТА В КОНЦЕ ПРОГОНА.
-      SUBROUTINE MNPRT
-      COMMON /RELF/ IREL,NRL,NRB,RELX(8),RH(5,8),RELBX(8),RBH(5,8),
-     1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL
-      IF(IREL.EQ.0) RETURN
-      IF(IMNFL.EQ.0) RETURN
-      WRITE(6,915) RMINP,RMN11,RMN12,RMNT
-  915 FORMAT(1H0,12HMIN PROSVET=,F7.1,8H M, X11=,F7.0,6H, X12=,
-     1F7.1,4H, T=,F6.1,4H SEK)
-      END
-C--------------------------------------------------------------
-C     АКСЕССОР ДЛЯ ПАСКАЛЬ-ОБОЛОЧКИ: ПРИЗНАК, ЗЕМЛЯ, ПРОСВЕТ,
-C     МИНИМАЛЬНЫЙ ПРОСВЕТ ЗА ПРОГОН.
       SUBROUTINE RELGET(X11,X12,ALT,IR,ZG,PR,RMIN)
       COMMON /RELF/ IREL,NRL,NRB,RELX(8),RH(5,8),RELBX(8),RBH(5,8),
      1RDT,RTHR,REPS,RWARN,RCRIT,RMINP,RMN11,RMN12,RMNT,IMNFL

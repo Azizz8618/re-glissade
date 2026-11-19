@@ -25,7 +25,8 @@ var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     RECON:boolean; NFRMX,NEVMX,NSTEP,IEVK:integer;
     RX:VEC13; RU:VEC4; RT:real;
     XP,YP,HP,XK,YK,HK,ZG,PR,RMIN:real;
-    FCUR,FSTA,FWRN:real;
+    FCUR,FSTA,FCAP,FRES,FWRN:real;
+    FEX,FRM,FZERO:real; FMODE:integer;
     IREL,IST:integer; RELHIT:boolean;
     SCVERT,SCTOCH,SCY,SCSKO,SCUPR,SCPLAV,SCTOT:real; SCZACH:integer;
     SCW1,SCW2,SCW3,SCW4,SCW5,SCW6,SCW7:real;
@@ -89,9 +90,9 @@ procedure RELGET(var X11,X12,ALT:real; var IR:integer;
            var ZG,PR,RMIN:real); fortran;
 procedure ZEM(var X11,X12,ZG:real); fortran;
 (* запас топлива: расчёт в Фортране *)
-procedure FUELR(var U4,DT:real); fortran;
-procedure FUELRS; fortran;
-procedure FUELGT(var FCUR,FSTA,FWRN:real); fortran;
+procedure FUELRS(var MODE:integer; var DT,U4:real); fortran;
+procedure FUELSE(var FEX,FRM:real); fortran;
+procedure FUELGT(var FCUR,FSTA,FCAP,FRES,FWRN:real); fortran;
 procedure MNPRS(var X11,X12,ALT,T:real); fortran;
 procedure STK(var X0,Y0,H0,X1,Y1,H1:real; var IST:integer;
            var XK,YK,HK:real); fortran;
@@ -228,7 +229,8 @@ begin
     end
     else for I:=1 to 4 do U[I]:=UHOLD[I]
   end;
-  FUELR(U[4],DTSH);
+  FMODE:=1;
+  FUELRS(FMODE,DTSH,U[4]);
   SCPUT(U);
   TURB;
   if ICTRL=3 then
@@ -324,7 +326,7 @@ begin
   GLANG(X,TH,GA,PS,DTM,EGLI,IPOS);
   GLVOD(VA,ALF);
   RELGET(X[11],X[12],X[13],IREL,ZG,PR,RMIN);
-  FUELGT(FCUR,FSTA,FWRN);
+  FUELGT(FCUR,FSTA,FCAP,FRES,FWRN);
   IB:=21+TRUNC(X[12]/5.0);
   if IB<1 then IB:=1;
   if IB>41 then IB:=41;
@@ -394,7 +396,13 @@ begin
   write(' TYAG='); PRNUM(100*U[4],7); PAD(11);
   write('+');
   write(' TOPLIVO='); PRNUM(FCUR,7); write(' KG');
-  PAD(19);
+  if FCUR<=FWRN then begin write(' MALO'); PAD(14) end
+  else PAD(19);
+  writeln;
+  PAD(38);
+  write('+');
+  write(' REZERV='); PRNUM(FRES,7); write(' KG');
+  PAD(20);
   writeln
 end;
 (************************************************************)
@@ -455,7 +463,8 @@ begin
     writeln('MAN: EV+ EV- AI+ AI- RU+ RU- TH+ TH-')
   end
   else
-    writeln('INS: SEL/FRZ/UNF/INJ/EPS/REC/RPL/RST/SCR/HLP/PIL');
+    writeln('INS: SEL/FRZ/UNF/INJ/EPS/REC/RPL/RST/SCR');
+    writeln('     FUL/RES/HLP/PIL');
   ASK; GTALF(CMD)
 end;
 (************************************************************)
@@ -475,7 +484,9 @@ begin
   EXDT0[5]:=0.60; EXTMAX[5]:=2400.0;
   PARAMS;
   INIT;
-  PAUS:=true; RUN:=false; RELHIT:=false; FUELRS;
+  FEX:=0.0; FRM:=1.0;
+  PAUS:=true; RUN:=false; RELHIT:=false; FMODE:=0; FZERO:=0.0;
+  FUELRS(FMODE,FZERO,U[4]);
   repeat
     if PAUS then
     begin
@@ -500,6 +511,10 @@ begin
           writeln('PFL=',PFL:10:3) end;
         CMD='EPS   ': begin ASK; GTRL(EPSKM,OK); KMSET(EPSKM);
           writeln('EPS=',EPSKM:10:3) end;
+        CMD='FUL   ': begin ASK; GTRL(FEX,OK); FUELSE(FEX,FRM);
+          writeln('ДОПОЛНИТЕЛЬНОЕ ТОПЛИВО=',FEX:8:2,' КГ') end;
+        CMD='RES   ': begin ASK; GTRL(FRM,OK); FUELSE(FEX,FRM);
+          writeln('МНОЖИТЕЛЬ РЕЗЕРВА=',FRM:8:3) end;
         CMD='DTC   ': begin ASK; GTRL(DTCV,OK);
           DTPAR(DTB,DTN,DTX,DTD,DTU);
           if DTCV<DTN then DTCV:=DTN;
@@ -511,7 +526,7 @@ begin
           else
           begin
             writeln('INS: SEL FRZ UNF INJ EPS REC RPL');
-            writeln('     RST SCR HLP PIL')
+            writeln('     RST SCR FUL RES HLP PIL')
           end;
         CMD='AUTO  ': begin MANUAL:=false; writeln('AUTO PILOT') end;
         CMD='EV+   ': begin MANUAL:=true; DE:=DE+0.05;

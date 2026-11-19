@@ -107,6 +107,5 @@ C     ОЦЕНКА ПОСАДКИ ПО ВЕРТИКАЛЬНОЙ СКОРОСТИ
   860 FORMAT(1H0,25HAVARIA: KASANIE DO POROGA)
       WRITE(6,870) T
   870 FORMAT(1H0,2HT=,F7.1,7H SEKUND)
-      CALL MNPRT
       RETURN
       END
