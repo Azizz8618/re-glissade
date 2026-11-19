@@ -33,6 +33,7 @@ VAR X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     I,J,IH,JA,JG,IB,K,OCE:INTEGER; OK,RUN,PAUS:BOOLEAN;
     IMODE,IEX,IFLT:INTEGER;
     IFL,IGR,ISP:INTEGER; (* ЗАКРЫЛКИ, ШАССИ, СПОЙЛЕРЫ *)
+    ICTLV:INTEGER; (* ПЕРЕКЛЮЧАТЕЛЬ ШАГА *)
     MANUAL:BOOLEAN; DE,DA,DR,DTZ:REAL;
     RECON:BOOLEAN; NFRMX,NEVMX,NSTEP,IEVK:INTEGER;
     RX:VEC13; RU:VEC4; RT:REAL;
@@ -479,7 +480,7 @@ BEGIN
   END
   ELSE
     WRITELN('INS: SEL/FRZ/UNF/INJ/EPS/REC/RPL/RST/SCR');
-    WRITELN('     FUL/RES/HLP/PIL FLP/GER/SPL');
+    WRITELN('     FUL/RES/HLP/PIL FLP/GER/SPL ICTL');
   ASK; GTALF(CMD)
 END;
 (************************************************************)
@@ -531,6 +532,16 @@ BEGIN
           WRITELN('ДОПОЛНИТЕЛЬНОЕ ТОПЛИВО=',FEX:8:2,' КГ') END;
         CMD='RES   ': BEGIN ASK; GTRL(FRM,OK); FUELSE(FEX,FRM);
           WRITELN('МНОЖИТЕЛЬ РЕЗЕРВА=',FRM:8:3) END;
+        CMD='ICTL  ': BEGIN ASK; GTINT(ICTLV,OK);
+          IF OK AND ((ICTLV=0) OR (ICTLV=3) OR (ICTLV=4)) THEN
+          BEGIN
+            ICTRL:=ICTLV;
+            TCTRL:=0.0; DTCTRL:=H; DTSH:=H;
+            IF ICTLV=0 THEN WRITELN('ШАГ ФИКСИРОВАННЫЙ')
+            ELSE IF ICTLV=3 THEN WRITELN('ШАГ ИНТЕГР. АДАПТИВНЫЙ')
+            ELSE WRITELN('ШАГ УПРАВЛЕНИЯ АДАПТИВНЫЙ')
+          END
+          ELSE WRITELN('ОШИБКА: ICTL 0/3/4') END;
         CMD='FLP   ': BEGIN ASK; GTINT(IFL,OK);
           IF OK AND (IFL>=0) AND (IFL<=2) THEN
           BEGIN
@@ -571,7 +582,8 @@ BEGIN
           BEGIN
             WRITELN('INS: SEL FRZ UNF INJ EPS REC RPL');
             WRITELN('     RST SCR FUL RES HLP PIL');
-            WRITELN('     FLP 0/1/2 GER 0/1 SPL 0/1')
+            WRITELN('     FLP 0/1/2 GER 0/1 SPL 0/1');
+          WRITELN('     ICTL 0/3/4 - РЕЖИМ ШАГА')
           END;
         CMD='AUTO  ': BEGIN MANUAL:=FALSE; WRITELN('AUTO PILOT') END;
         CMD='EV+   ': BEGIN MANUAL:=TRUE; DE:=DE+0.05;

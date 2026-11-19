@@ -22,6 +22,7 @@ var X,VX1,VX2,VX3,VK1,VK2,VK3,VK4:VEC13;
     I,J,IH,JA,JG,IB,K,OCE:integer; OK,RUN,PAUS:boolean;
     IMODE,IEX,IFLT:integer;
     IFL,IGR,ISP:integer; (* закрылки, шасси, спойлеры *)
+    ICTLV:integer; (* переключатель шага *)
     MANUAL:boolean; DE,DA,DR,DTZ:real;
     RECON:boolean; NFRMX,NEVMX,NSTEP,IEVK:integer;
     RX:VEC13; RU:VEC4; RT:real;
@@ -468,7 +469,7 @@ begin
   end
   else
     writeln('INS: SEL/FRZ/UNF/INJ/EPS/REC/RPL/RST/SCR');
-    writeln('     FUL/RES/HLP/PIL FLP/GER/SPL');
+    writeln('     FUL/RES/HLP/PIL FLP/GER/SPL ICTL');
   ASK; GTALF(CMD)
 end;
 (************************************************************)
@@ -520,6 +521,16 @@ begin
           writeln('ДОПОЛНИТЕЛЬНОЕ ТОПЛИВО=',FEX:8:2,' КГ') end;
         CMD='RES   ': begin ASK; GTRL(FRM,OK); FUELSE(FEX,FRM);
           writeln('МНОЖИТЕЛЬ РЕЗЕРВА=',FRM:8:3) end;
+        CMD='ICTL  ': begin ASK; GTINT(ICTLV,OK);
+          if OK and ((ICTLV=0) or (ICTLV=3) or (ICTLV=4)) then
+          begin
+            ICTRL:=ICTLV;
+            TCTRL:=0.0; DTCTRL:=H; DTSH:=H;
+            if ICTLV=0 then writeln('ШАГ ФИКСИРОВАННЫЙ')
+            else if ICTLV=3 then writeln('ШАГ ИНТЕГР. АДАПТИВНЫЙ')
+            else writeln('ШАГ УПРАВЛЕНИЯ АДАПТИВНЫЙ')
+          end
+          else writeln('ОШИБКА: ICTL 0/3/4') end;
         CMD='FLP   ': begin ASK; GTINT(IFL,OK);
           if OK and (IFL>=0) and (IFL<=2) then
           begin
@@ -560,7 +571,8 @@ begin
           begin
             writeln('INS: SEL FRZ UNF INJ EPS REC RPL');
             writeln('     RST SCR FUL RES HLP PIL');
-            writeln('     FLP 0/1/2 GER 0/1 SPL 0/1')
+            writeln('     FLP 0/1/2 GER 0/1 SPL 0/1');
+          writeln('     ICTL 0/3/4 - режим шага')
           end;
         CMD='AUTO  ': begin MANUAL:=false; writeln('AUTO PILOT') end;
         CMD='EV+   ': begin MANUAL:=true; DE:=DE+0.05;
