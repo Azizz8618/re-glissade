@@ -104,6 +104,21 @@ def run_game(sc, timeout=600):
                     os.write(master, (answers[sent] + '\n').encode())
                     sent += 1
             if proc.poll() is not None:
+                # Дослушать хвост вывода: "КОНЕЦ ЗАДАЧИ" может ещё быть
+                # в буфере псевдотерминала в момент завершения процесса.
+                while True:
+                    ready, _, _ = select.select([master], [], [], 0.1)
+                    if not ready:
+                        break
+                    try:
+                        tail = os.read(master, 4096)
+                    except OSError:
+                        break
+                    if not tail:
+                        break
+                    buf += tail
+                    out.write(tail)
+                    out.flush()
                 break
     try:
         proc.wait(timeout=10)
