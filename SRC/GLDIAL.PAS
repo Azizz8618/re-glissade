@@ -290,7 +290,12 @@ begin
   FP:=N mod 100;
   if S<0 then write('-') else write(' ');
   write(IP:1);
-  write('.',FP:2);
+  if FP<10 then
+  begin
+    write('.0');
+    write(FP:1)
+  end
+  else write('.',FP:1);
   ND:=1;
   K:=IP div 10;
   while K>0 do

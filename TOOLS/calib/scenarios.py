@@ -57,7 +57,7 @@ def save(sc):
         json.dumps(sc, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
 
 
-def run_game(sc, timeout=240):
+def run_game(sc, timeout=600):
     """Прогон сценария в диалоговой игре. Возвращает метрики."""
     answers = [
         str(sc['aircraft']), '1', '0', '5', '0',

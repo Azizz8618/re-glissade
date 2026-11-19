@@ -301,7 +301,12 @@ BEGIN
   FP:=N MOD 100;
   IF S<0 THEN WRITE('-') ELSE WRITE(' ');
   WRITE(IP:1);
-  WRITE('.',FP:2);
+  IF FP<10 THEN
+  BEGIN
+    WRITE('.0');
+    WRITE(FP:1)
+  END
+  ELSE WRITE('.',FP:1);
   ND:=1;
   K:=IP DIV 10;
   WHILE K>0 DO
